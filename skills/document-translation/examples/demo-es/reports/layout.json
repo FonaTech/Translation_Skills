@@ -1,0 +1,83 @@
+{
+  "snapshot": "7455db99131d20ac959685cb496216cc154b3de62f8393ba23ad56cfa38d1334",
+  "outputs": [
+    {
+      "file": "es-faithful.html",
+      "pdf": "es-faithful.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 565,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "4841ba9620ecd5e64de1a66eeeb907afaba2d0d6be528e2c0e1bc50fe5b586f8",
+      "pdf_sha256": "31dff947b454c651397bce74109880155600f1d7edd65eed71611d35eccf0c76"
+    },
+    {
+      "file": "es-interpretive.html",
+      "pdf": "es-interpretive.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 595,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "0607dd810223f35462c9691f00d28e3d688397e0f8ce6dd272f7a9845e1ce709",
+      "pdf_sha256": "a60bfecf3a5ee486737a4a98bd9804ead2215175be6e38268ab666b4091cb0ca"
+    },
+    {
+      "file": "es-alignment.html",
+      "pdf": "es-alignment.pdf",
+      "pages": 2,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 1170,
+            "images": 0
+          },
+          {
+            "page": 2,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 581,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "79d78cbf61cd22640e5aaff2076e5155d0bb6a80bb607b24a7c5bc40206a0abf",
+      "pdf_sha256": "dc00082679f18f9432437d2bafe54a40286224a983b81cde9a8aa61257d39126"
+    }
+  ],
+  "pass": true
+}

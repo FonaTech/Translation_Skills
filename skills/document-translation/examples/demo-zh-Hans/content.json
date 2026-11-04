@@ -1,0 +1,364 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "id": "D001",
+      "name": "Author-owned synthetic examples",
+      "file": "sources/original.txt",
+      "sha256": "f83a0993f92618bdb0d452c81b07e4378892fde8dfc439fe1ef9c7b5417209fe",
+      "media_type": "text/plain",
+      "page_count": null,
+      "selection_scope": "all",
+      "rights": "Copyright 2026 Yufeng Zhan; MIT",
+      "next_block_index": 17
+    }
+  ],
+  "blocks": [
+    {
+      "id": "D001-B00001",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "research/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00001-U0001",
+          "source": "Research note",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "研究记录",
+              "interpretive": "研究记录"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00002",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "research"
+      },
+      "units": [
+        {
+          "id": "D001-B00002-U0001",
+          "source": "The trial included 24 participants. The estimated difference was 2.4 points (95% CI, 0.3–4.5); the association does not establish causation.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "试验纳入 24 名参与者。估计差异为 2.4 分（95% CI，0.3–4.5）；这一关联不能确立因果关系。",
+              "interpretive": "共有 24 人参加试验。估计差异是 2.4 分，95% CI 为 0.3–4.5。结果显示的是关联，不能据此认定存在因果关系。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00003",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "manual/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00003-U0001",
+          "source": "Equipment instruction",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "设备说明",
+              "interpretive": "设备说明"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00004",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "manual"
+      },
+      "units": [
+        {
+          "id": "D001-B00004-U0001",
+          "source": "Disconnect the power before cleaning. Do not immerse the unit. Wait at least 30 seconds before reconnecting it.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "清洁前断开电源。切勿将本机浸入液体。重新接通电源前，至少等待 30 秒。",
+              "interpretive": "先断开电源，再清洁设备；清洁时不得把整机浸入液体。完成后，至少等 30 秒再接通电源。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00005",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "legal/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00005-U0001",
+          "source": "Agreement clause",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "协议条款",
+              "interpretive": "协议条款"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00006",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "legal"
+      },
+      "units": [
+        {
+          "id": "D001-B00006-U0001",
+          "source": "The tenant may terminate the agreement on 30 days’ written notice, except during the initial 6-month term. The deposit must be returned within 14 days, subject to documented deductions.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "承租人可提前 30 天发出书面通知终止协议，但最初 6 个月的期限除外。押金须在 14 天内退还，但可扣除有书面凭据的款项。",
+              "interpretive": "最初 6 个月内，承租人不能依此条款提前 30 天通知终止协议；在此期限之外，可提前 30 天发出书面通知终止协议。押金应在 14 天内退还，如有扣款，须有书面凭据。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00007",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "finance/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00007-U0001",
+          "source": "Operating report",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "经营报告",
+              "interpretive": "经营报告"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00008",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "finance"
+      },
+      "units": [
+        {
+          "id": "D001-B00008-U0001",
+          "source": "Revenue was EUR 1.20 million in 2025, excluding discontinued operations. The operating margin fell from 8.0% to 6.5%; this is a decline of 1.5 percentage points, not 1.5%.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "2025 年收入为 EUR 1.20 百万，不包括终止经营业务。营业利润率从 8.0% 降至 6.5%；这表示下降 1.5 个百分点，而非下降 1.5%。",
+              "interpretive": "剔除终止经营业务后，2025 年收入为 EUR 1.20 百万。营业利润率由 8.0% 变为 6.5%，两者相差 1.5 个百分点；不能将这一差额写成下降 1.5%。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00009",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "literary/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00009-U0001",
+          "source": "Short fiction",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "短篇叙事",
+              "interpretive": "短篇叙事"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00010",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "literary"
+      },
+      "units": [
+        {
+          "id": "D001-B00010-U0001",
+          "source": "At dusk, Mira closed the blue gate. “Tomorrow,” she said, though the train would not return for a week.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "黄昏时，米拉关上了那扇蓝色的门。“明天。”她说，尽管火车要过一周才会回来。",
+              "interpretive": "暮色降临，米拉掩上蓝色的门。“明天。”她说。可火车再回来，已是一周以后。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00011",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "public-service/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00011-U0001",
+          "source": "Service notice",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "公共服务公告",
+              "interpretive": "公共服务公告"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00012",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "public-service"
+      },
+      "units": [
+        {
+          "id": "D001-B00012-U0001",
+          "source": "Applications received by 17:00 on 12 May will be reviewed in June. Late applications are not automatically rejected; they are considered only if places remain.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "5 月 12 日 17:00 前收到的申请将在 6 月审核。逾期申请不会自动被拒绝；只有仍有名额时才予考虑。",
+              "interpretive": "在 5 月 12 日 17:00 前收到的申请，会进入 6 月的审核。晚到的申请并非一律拒绝，但只有名额未满时才会被考虑。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00013",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "health/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00013-U0001",
+          "source": "Information leaflet",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "信息单页",
+              "interpretive": "信息单页"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00014",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "health"
+      },
+      "units": [
+        {
+          "id": "D001-B00014-U0001",
+          "source": "Take 1 tablet with food once daily for 5 days, unless your clinician gives different instructions. Do not take a second dose to replace a missed dose.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "每日随餐服用 1 片，连续服用 5 天，除非临床医生另有指示。不得为补服漏服剂量而再服一剂。",
+              "interpretive": "如果临床医生没有另作安排，应连续 5 天、每天随餐服用 1 片。漏服后，不得通过额外再服一剂来补偿。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00015",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "software/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00015-U0001",
+          "source": "Protocol guide",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "协议指南",
+              "interpretive": "协议指南"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00016",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "software"
+      },
+      "units": [
+        {
+          "id": "D001-B00016-U0001",
+          "source": "Set timeout_ms to 1500. A value of 0 disables the timeout; it does not mean “retry immediately.” Preserve the identifier user_id in all examples.",
+          "translations": {
+            "zh-Hans": {
+              "faithful": "将 timeout_ms 设为 1500。值为 0 时会禁用超时；它并不表示“立即重试”。所有示例中均应保留标识符 user_id。",
+              "interpretive": "将 timeout_ms 设置为 1500。如果设置为 0，含义是关闭超时，而不是立即重试。示例里的 user_id 是标识符，应保持原样。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "corrections": []
+}

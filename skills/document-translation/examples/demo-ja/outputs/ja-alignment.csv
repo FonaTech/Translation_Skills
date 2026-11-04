@@ -1,0 +1,5 @@
+﻿unit_id,document_id,page_or_element,source,faithful,interpretive,review_notes
+D001-B00001-U0001,D001,research/heading,Research note,研究ノート,研究ノート,[]
+D001-B00002-U0001,D001,research,"The trial included 24 participants. The estimated difference was 2.4 points (95% CI, 0.3–4.5); the association does not establish causation.",試験には 24 人が参加した。推定差は 2.4 点（95% CI、0.3–4.5）であり、この関連は因果関係を立証しない。,参加者は 24 人だった。推定された差は 2.4 点で、95% CI は 0.3–4.5 だった。ただし、関連が見られても因果関係が示されたことにはならない。,[]
+D001-B00003-U0001,D001,literary/heading,Short fiction,短い物語,短い物語,[]
+D001-B00004-U0001,D001,literary,"At dusk, Mira closed the blue gate. “Tomorrow,” she said, though the train would not return for a week.",夕暮れに、ミラは青い門を閉めた。「明日」と彼女は言ったが、列車が戻るのは一週間後だった。,夕暮れ、ミラは青い門を閉じた。「明日」。そう口にしたものの、次に列車が帰ってくるのは一週間も先だった。,[]

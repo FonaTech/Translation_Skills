@@ -1,0 +1,5 @@
+﻿unit_id,document_id,page_or_element,source,faithful,interpretive,review_notes
+D001-B00001-U0001,D001,manual/heading,Equipment instruction,تعليمات الجهاز,تعليمات الجهاز,[]
+D001-B00002-U0001,D001,manual,Disconnect the power before cleaning. Do not immerse the unit. Wait at least 30 seconds before reconnecting it.,افصل الطاقة قبل التنظيف. لا تغمر الوحدة في سائل. انتظر 30 ثانية على الأقل قبل إعادة توصيلها.,قبل بدء التنظيف، افصل الطاقة. يجب ألا تُغمر الوحدة في سائل، وعليك الانتظار 30 ثانية على الأقل قبل توصيل الطاقة مرة أخرى.,[]
+D001-B00003-U0001,D001,public-service/heading,Service notice,إعلان خدمة,إعلان خدمة,[]
+D001-B00004-U0001,D001,public-service,Applications received by 17:00 on 12 May will be reviewed in June. Late applications are not automatically rejected; they are considered only if places remain.,ستُراجع في يونيو الطلبات المستلمة بحلول الساعة 17:00 يوم 12 مايو. ولا تُرفض الطلبات المتأخرة تلقائياً؛ بل تُنظر فقط إذا بقيت أماكن.,إذا وصل الطلب بحلول الساعة 17:00 يوم 12 مايو، فستتم مراجعته في يونيو. أما الطلب المتأخر فلا يُرفض تلقائياً، لكن النظر فيه يتوقف على بقاء أماكن.,[]

@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "id": "D001",
+      "name": "Author-owned synthetic examples",
+      "file": "sources/original.txt",
+      "sha256": "ec577be9c62035c34d08f794a5d8778731428cc8646b7c6e5d2029766860eb59",
+      "media_type": "text/plain",
+      "page_count": null,
+      "selection_scope": "all",
+      "rights": "Copyright 2026 Yufeng Zhan; MIT",
+      "next_block_index": 5
+    }
+  ],
+  "blocks": [
+    {
+      "id": "D001-B00001",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "research/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00001-U0001",
+          "source": "Research note",
+          "translations": {
+            "ja": {
+              "faithful": "研究ノート",
+              "interpretive": "研究ノート"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00002",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "research"
+      },
+      "units": [
+        {
+          "id": "D001-B00002-U0001",
+          "source": "The trial included 24 participants. The estimated difference was 2.4 points (95% CI, 0.3–4.5); the association does not establish causation.",
+          "translations": {
+            "ja": {
+              "faithful": "試験には 24 人が参加した。推定差は 2.4 点（95% CI、0.3–4.5）であり、この関連は因果関係を立証しない。",
+              "interpretive": "参加者は 24 人だった。推定された差は 2.4 点で、95% CI は 0.3–4.5 だった。ただし、関連が見られても因果関係が示されたことにはならない。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00003",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "literary/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00003-U0001",
+          "source": "Short fiction",
+          "translations": {
+            "ja": {
+              "faithful": "短い物語",
+              "interpretive": "短い物語"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00004",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "literary"
+      },
+      "units": [
+        {
+          "id": "D001-B00004-U0001",
+          "source": "At dusk, Mira closed the blue gate. “Tomorrow,” she said, though the train would not return for a week.",
+          "translations": {
+            "ja": {
+              "faithful": "夕暮れに、ミラは青い門を閉めた。「明日」と彼女は言ったが、列車が戻るのは一週間後だった。",
+              "interpretive": "夕暮れ、ミラは青い門を閉じた。「明日」。そう口にしたものの、次に列車が帰ってくるのは一週間も先だった。"
+            }
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "corrections": []
+}

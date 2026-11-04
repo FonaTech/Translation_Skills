@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "id": "D001",
+      "name": "Author-owned synthetic examples",
+      "file": "sources/original.txt",
+      "sha256": "1a2e1f99e19901e2519d5972fa42fea4cb5e60ea87a6de6ff8b152b0d0e800c1",
+      "media_type": "text/plain",
+      "page_count": null,
+      "selection_scope": "all",
+      "rights": "Copyright 2026 Yufeng Zhan; MIT",
+      "next_block_index": 5
+    }
+  ],
+  "blocks": [
+    {
+      "id": "D001-B00001",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "manual/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00001-U0001",
+          "source": "Equipment instruction",
+          "translations": {
+            "ar": {
+              "faithful": "تعليمات الجهاز",
+              "interpretive": "تعليمات الجهاز"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00002",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "manual"
+      },
+      "units": [
+        {
+          "id": "D001-B00002-U0001",
+          "source": "Disconnect the power before cleaning. Do not immerse the unit. Wait at least 30 seconds before reconnecting it.",
+          "translations": {
+            "ar": {
+              "faithful": "افصل الطاقة قبل التنظيف. لا تغمر الوحدة في سائل. انتظر 30 ثانية على الأقل قبل إعادة توصيلها.",
+              "interpretive": "قبل بدء التنظيف، افصل الطاقة. يجب ألا تُغمر الوحدة في سائل، وعليك الانتظار 30 ثانية على الأقل قبل توصيل الطاقة مرة أخرى."
+            }
+          },
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "D001-B00003",
+      "type": "heading",
+      "source": {
+        "document_id": "D001",
+        "element": "public-service/heading"
+      },
+      "units": [
+        {
+          "id": "D001-B00003-U0001",
+          "source": "Service notice",
+          "translations": {
+            "ar": {
+              "faithful": "إعلان خدمة",
+              "interpretive": "إعلان خدمة"
+            }
+          },
+          "notes": []
+        }
+      ],
+      "level": 1
+    },
+    {
+      "id": "D001-B00004",
+      "type": "paragraph",
+      "source": {
+        "document_id": "D001",
+        "element": "public-service"
+      },
+      "units": [
+        {
+          "id": "D001-B00004-U0001",
+          "source": "Applications received by 17:00 on 12 May will be reviewed in June. Late applications are not automatically rejected; they are considered only if places remain.",
+          "translations": {
+            "ar": {
+              "faithful": "ستُراجع في يونيو الطلبات المستلمة بحلول الساعة 17:00 يوم 12 مايو. ولا تُرفض الطلبات المتأخرة تلقائياً؛ بل تُنظر فقط إذا بقيت أماكن.",
+              "interpretive": "إذا وصل الطلب بحلول الساعة 17:00 يوم 12 مايو، فستتم مراجعته في يونيو. أما الطلب المتأخر فلا يُرفض تلقائياً، لكن النظر فيه يتوقف على بقاء أماكن."
+            }
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "corrections": []
+}
