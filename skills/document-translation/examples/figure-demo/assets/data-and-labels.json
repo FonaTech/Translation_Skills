@@ -1,0 +1,22 @@
+{
+  "points": [
+    [
+      0,
+      20
+    ],
+    [
+      10,
+      22
+    ],
+    [
+      20,
+      23
+    ],
+    [
+      30,
+      26
+    ]
+  ],
+  "coordinate_mapping": "x=180+t/30*1150; y=700-(temperature-20)/6*540",
+  "label_only_change": true
+}

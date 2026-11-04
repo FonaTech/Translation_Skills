@@ -1,0 +1,12 @@
+﻿unit_id,document_id,page_or_element,source,faithful,interpretive,review_notes
+D001-B00001-U0001,D001,1,Author-owned extraction fixture,作者自有提取测试材料,作者自有提取测试材料,[]
+D001-B00002-U0001,D001,1,LEFT paragraph 1. Preserve 0 and N/A.,左栏第 1 段。保留 0 和 N/A。,左栏第 1 段：0 与 N/A 必须原样保留。,[]
+D001-B00003-U0001,D001,1,LEFT paragraph 2. Preserve 0 and N/A.,左栏第 2 段。保留 0 和 N/A。,左栏第 2 段：0 与 N/A 必须原样保留。,[]
+D001-B00004-U0001,D001,1,LEFT paragraph 3. Preserve 0 and N/A.,左栏第 3 段。保留 0 和 N/A。,左栏第 3 段：0 与 N/A 必须原样保留。,[]
+D001-B00005-U0001,D001,1,LEFT paragraph 4. Preserve 0 and N/A.,左栏第 4 段。保留 0 和 N/A。,左栏第 4 段：0 与 N/A 必须原样保留。,[]
+D001-B00006-U0001,D001,1,LEFT paragraph 5. Preserve 0 and N/A.,左栏第 5 段。保留 0 和 N/A。,左栏第 5 段：0 与 N/A 必须原样保留。,[]
+D001-B00007-U0001,D001,1,RIGHT paragraph 1. Preserve 0 and N/A.,右栏第 1 段。保留 0 和 N/A。,右栏第 1 段：0 与 N/A 必须原样保留。,[]
+D001-B00008-U0001,D001,1,RIGHT paragraph 2. Preserve 0 and N/A.,右栏第 2 段。保留 0 和 N/A。,右栏第 2 段：0 与 N/A 必须原样保留。,[]
+D001-B00009-U0001,D001,1,RIGHT paragraph 3. Preserve 0 and N/A.,右栏第 3 段。保留 0 和 N/A。,右栏第 3 段：0 与 N/A 必须原样保留。,[]
+D001-B00010-U0001,D001,1,RIGHT paragraph 4. Preserve 0 and N/A.,右栏第 4 段。保留 0 和 N/A。,右栏第 4 段：0 与 N/A 必须原样保留。,[]
+D001-B00011-U0001,D001,1,RIGHT paragraph 5. Preserve 0 and N/A.,右栏第 5 段。保留 0 和 N/A。,右栏第 5 段：0 与 N/A 必须原样保留。,[]

@@ -1,0 +1,75 @@
+{
+  "snapshot": "bf8a2f9199a9aa925c5b5b0fb41eeda386a81c50456cd92de35b389e0d4e5678",
+  "outputs": [
+    {
+      "file": "zh-Hans-faithful.html",
+      "pdf": "zh-Hans-faithful.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 224,
+            "images": 1
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "ffee2fc39a8e3434bacce33c819c93bf39000d5fcc4c3c6a2d334b95c050f0be",
+      "pdf_sha256": "47ce3845d93bbf0aa9e77132543bfadb49c455bbb16fd12bebc7f563ab70a185"
+    },
+    {
+      "file": "zh-Hans-interpretive.html",
+      "pdf": "zh-Hans-interpretive.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 235,
+            "images": 1
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "14c0df7d5b4e0dd67067aeec37f0136764fb896ea6fe54f1c7c0dc8834a39e8f",
+      "pdf_sha256": "4c624948964bfdf085ddc9fd87318bcaea8f54c7ec883daa895ac9a84f3d3987"
+    },
+    {
+      "file": "zh-Hans-alignment.html",
+      "pdf": "zh-Hans-alignment.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 391,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "5bea416ab321237b97b6d398ccd87f82b2e338a5cdf18462c15a1b3cd1402f2f",
+      "pdf_sha256": "9016553c36bcced119b011575f95b2b9ec226174c9e015928f5d19432c038216"
+    }
+  ],
+  "pass": true
+}

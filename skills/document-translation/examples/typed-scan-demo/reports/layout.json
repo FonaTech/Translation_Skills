@@ -1,0 +1,91 @@
+{
+  "snapshot": "bbdb99dc1f4a3e83385f86a3db11ce752f98f5b78773713e57a70a36fb673db0",
+  "outputs": [
+    {
+      "file": "zh-Hans-faithful.html",
+      "pdf": "zh-Hans-faithful.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 327,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "4d1050c6321519c3e6837aa15d6d942942824ce0845b754645d7ec3c40b7373b",
+      "pdf_sha256": "b4d4ea277f2a6b4ba970f6b9619482adf223b4d0c8be7e73492be8bd7a915654"
+    },
+    {
+      "file": "zh-Hans-interpretive.html",
+      "pdf": "zh-Hans-interpretive.pdf",
+      "pages": 1,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 368,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "3519aa4cecd63b88a1e56ea77a1bf55ec64f49e12ab47dfdd6938bf85242694c",
+      "pdf_sha256": "d7fd43ccd0d5ef37dfbd94f5b72c6b4cc9b81bec8a505a95bab2a0db66006bbd"
+    },
+    {
+      "file": "zh-Hans-alignment.html",
+      "pdf": "zh-Hans-alignment.pdf",
+      "pages": 3,
+      "layout": {
+        "pages": [
+          {
+            "page": 1,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 583,
+            "images": 0
+          },
+          {
+            "page": 2,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 579,
+            "images": 0
+          },
+          {
+            "page": 3,
+            "overflow": false,
+            "bad": [],
+            "orphanHeading": false,
+            "textChars": 273,
+            "images": 0
+          }
+        ],
+        "missingUnits": [],
+        "alteredUnits": [],
+        "pass": true
+      },
+      "empty_pdf_pages": [],
+      "html_sha256": "53d9a9ceeda3e9605e9d1b5472fd78ed64672342b94f447fb3de52311842aab4",
+      "pdf_sha256": "85202b21717d95576cc46ba0d1ef6db030ed1d07b84b04fd6b9a14ff93e36b2e"
+    }
+  ],
+  "pass": true
+}
