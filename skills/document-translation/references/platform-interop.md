@@ -1,28 +1,25 @@
-# Four runtimes, one core
+# Client integration
 
-Portable frontmatter has name/description. Helpers use Python/filesystem/shell, not proprietary chat tools. The invoking model translates.
+The shared skill uses standard name/description frontmatter and local Python/file tools. The model running in the client supplies the translations.
 
-| Runtime | Project install | User install |
+| Client | Project location | User location |
 |---|---|---|
-| Codex | .agents/skills/document-translation | ~/.agents/skills/document-translation; legacy ~/.codex is explicit |
-| Claude Code | .claude/skills/document-translation | ~/.claude/skills/document-translation |
-| OpenCode | .opencode/skills/document-translation | ~/.config/opencode/skills/document-translation |
-| Clouds_Coder | configured skills root, often skills/generated/document-translation | explicit --clouds-root |
+| Codex | `.agents/skills/document-translation` | `~/.agents/skills/document-translation` |
+| Claude Code | `.claude/skills/document-translation` | `~/.claude/skills/document-translation` |
+| OpenCode | `.opencode/skills/document-translation` | `~/.config/opencode/skills/document-translation` |
+| Clouds_Coder | Configured skills root, often `skills/generated/document-translation` | Explicit `--clouds-root` |
 
-Installer defaults to dry-run; --apply copies and backs up existing targets. It never injects standing instructions, grants tools or installs dependencies. Confirm discovery in a new client session. Filesystem tests are not live client tests.
+The installer previews destinations by default. `--apply` copies the skill and backs up an existing destination. It does not install Python dependencies or alter client instructions and permissions. Refresh discovery after installation. The explicit `codex-legacy` target supports clients that require `.codex/skills`.
 
-Clouds sidecar agents/clouds-coder.json is merged into frontmatter only in generated Clouds copies. Standard metadata remains for other clients. Full/compact loading keeps the runtime contract. Optional RAG provides a glossary, never source overrides.
+Clouds metadata in `agents/clouds-coder.json` is merged into generated Clouds copies. Its runtime contract and entrypoints remain available during full or compact loading. Other clients receive standard frontmatter. `agents/openai.yaml` supplies Codex display metadata. Claude plugin manifests offer an additional loading route from the repository root.
 
-Claude manifests exist hidden/visible. Codex openai.yaml is UI metadata. OpenCode follows standard frontmatter. Validation distinguishes static/install tests from actual host sessions. Recheck interfaces before changing adapters.
+## Translation loop
 
-## Native agent translation loop (all four clients)
+1. Inspect extracted text and source previews. Correct reading order, tables and figure/caption relationships before generating final tasks.
+2. Generate task packets with `tasks PROJECT --language TAG --size 12`. They include source hashes and expected IDs.
+3. Translate each item into both editions in the current client. Retain `language`, `source_hash`, `expected_ids` and `items`. Record the actual client/model as `translation_provider` when supplied.
+4. Apply each packet, compare the translations with the source, inspect audit warnings, then build, render and review.
 
-No Ollama installation, local model, API key, translation endpoint or platform-specific model tool is required. The model already running inside Codex, Claude Code, OpenCode or Clouds_Coder reads `tasks/*.json`, writes its real semantic translations to response packets, invokes `translate.py apply`, then resumes audit/build/render/review/release. If a task exceeds context, use smaller chunks and persist the remaining IDs; do not stop because an optional service is missing. A helper script cannot impersonate this step.
+No separate translation endpoint is required. Use smaller packets and persist pending IDs when context is limited. Optional glossary retrieval can inform terminology without overriding the selected source.
 
-1. Inspect extracted text and page previews; reconstruct paragraphs/figures before generating final tasks.
-2. `tasks PROJECT --language TAG --size 20 --all` emits source hashes and expected IDs.
-3. In the current agent loop, translate each item into both editions. Write the actual strings, keeping `language`, `source_hash`, `expected_ids` and `items`; set `translation_provider` to the actual agent/client. Sentence groups are optional, checked exchange data.
-4. `apply PROJECT PACKET` validates IDs/coverage/freshness atomically and records the packet hash and applied IDs. Do not mark semantic review complete merely because apply succeeds.
-5. Read audit warnings, fix errors, check source against both translations, build, render with source-preserving adjustments, visually inspect pages, record honest reviews and release. Rebuild/review after content changes.
-
-For a real corpus regression use `tools/pdf_corpus_regression.py prepare`, perform the native loop above on each project, then `check`. Preparation reports `AWAITING_CURRENT_AGENT_TRANSLATION`; it never fills edition fields or claims a semantic pass.
+For a corpus regression, `tools/pdf_corpus_regression.py prepare` creates tasks with empty edition fields. Complete the same loop before running `check`. Isolated installation tests establish copy/metadata behavior; they do not establish interactive compatibility with every client version.

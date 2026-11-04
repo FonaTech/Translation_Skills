@@ -1,9 +1,9 @@
 # Financial reporting
 
-Decision to practice: Currency, discontinued-operation scope and ratio changes.
+Review focus: Currency, accounting scope and ratio changes.
 
-Use the author-owned paired text in [paired-cases.json](../examples/paired-cases.json), domain key `finance`. Read the source as a coherent passage; establish faithful meaning before interpretive wording. These are fictional fixtures, not domain advice.
+Read the `finance` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
 
-Acceptance: Retain EUR 1.20 million, 2025 and 8.0% to 6.5%; distinguish 1.5 percentage points from 1.5%.
+Retain EUR 1.20 million, 2025 and the exclusion of discontinued operations. Preserve the change from 8.0% to 6.5% as 1.5 percentage points. Calling it a 1.5% decline changes the meaning.
 
-Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.
+Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.

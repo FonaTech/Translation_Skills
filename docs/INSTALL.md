@@ -1,39 +1,70 @@
-# Install on four clients
+# Installation
 
-Python 3.10+; shell and local file access. PDF extraction uses PyMuPDF, rendering uses Playwright/Chromium. Optional DOCX fixture tests use python-docx. PyYAML is required for the Clouds overlay. Install dependencies in your preferred virtual environment; the installer does not install them or request tools.
+[中文快速开始](../README_zh-CN.md#开始使用) · [Workflow](WORKFLOW.md)
+
+Install the Python dependencies once, then copy the skill to the client you use. The installer handles the copy and backups. It leaves client settings, standing instructions and permissions unchanged.
+
+## 1. Prepare the environment
+
+From the repository root, using Python 3.10 or later:
 
 ```bash
 python3 -m venv .venv
-# Activate according to your shell, then:
+source .venv/bin/activate
 python3 -m pip install -r requirements-core.txt
 python3 -m playwright install chromium
 python3 skills/document-translation/scripts/translate.py doctor
 ```
 
-| Client | Project route | User route | Activation example |
-|---|---|---|---|
-| Codex | `.agents/skills/document-translation` | `~/.agents/skills/document-translation` | `$document-translation` or plain request |
-| Claude Code | `.claude/skills/document-translation` | `~/.claude/skills/document-translation` | `/document-translation` or plain request |
-| OpenCode | `.opencode/skills/document-translation` | `~/.config/opencode/skills/document-translation` | ask to load `document-translation` |
-| Clouds_Coder | actual configured skills root; suggested `skills/generated/document-translation` | explicit configured root | ask/load `document-translation` |
+Use `.venv\Scripts\Activate.ps1` to activate the environment in Windows PowerShell. The client must use this environment, or another Python environment with the same dependencies, when it runs skill scripts.
 
-Run from repository root:
+For PDF output, install Chromium as shown above or supply an existing browser with `--browser` when building/rendering. `TRANSLATION_BROWSER` can also hold its executable path. OCR needs a separate Tesseract installation and language packs, or macOS Vision with Swift available. See [format support](SUPPORT.md).
+
+## 2. Choose an installation location
+
+| Client | Project installation | User installation | Invocation |
+|---|---|---|---|
+| Codex | `.agents/skills/document-translation` | `~/.agents/skills/document-translation` | `$document-translation` or a document translation request |
+| Claude Code | `.claude/skills/document-translation` | `~/.claude/skills/document-translation` | `/document-translation` or a document translation request |
+| OpenCode | `.opencode/skills/document-translation` | `~/.config/opencode/skills/document-translation` | Ask to load `document-translation` |
+| Clouds_Coder | The project's configured skills root | An explicitly configured skills root | Ask to load `document-translation` |
+
+For a project installation, choose `codex`, `claude` or `opencode`:
 
 ```bash
-python3 tools/install.py --targets codex claude opencode --project /path/to/active-project
-python3 tools/install.py --targets codex claude opencode --project /path/to/active-project --apply
-python3 tools/install.py --targets clouds --clouds-root /path/to/configured/skills --apply
-# User installation: omit --project for codex/claude/opencode.
-# Only when the active Codex surface requires the legacy location:
-python3 tools/install.py --targets codex-legacy --apply
+python3 tools/install.py --targets codex --project /path/to/project
+python3 tools/install.py --targets codex --project /path/to/project --apply
 ```
 
-Default is dry-run. Existing targets receive timestamped backup directories, and failed copies roll back. Symlink targets are rejected. No standing instructions, settings files, credentials or permissions are changed. Restart/refresh client skill discovery when necessary and confirm the skill appears. Roll back by removing the new copy and renaming the printed backup to its original path.
+The first command prints the destination. The second copies the files. To install in more than one client, use `--targets codex claude opencode`. To install for your user account, omit `--project`.
 
-Clouds metadata remains in `agents/clouds-coder.json` in the canonical source. The installer merges it into generated Clouds frontmatter. Other clients get standard name/description frontmatter and optional UI metadata. The skill does not require Clouds-only tools.
+For Clouds_Coder, use its configured skills directory:
 
-Claude optional plugin: the repository root includes `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` pointing to `./skills/`. You can inspect locally with `claude --plugin-dir /path/to/Translation_Skills` in a compatible Claude Code version. This route is additional to copying a normal skill; actual plugin CLI execution was not part of local tests. Visible mirrors in `claude-plugin/` are documentation copies, not alternate install roots.
+```bash
+python3 tools/install.py --targets clouds --clouds-root /path/to/skills
+python3 tools/install.py --targets clouds --clouds-root /path/to/skills --apply
+```
 
-Do not install demo projects as standalone skills. Do not create translation output inside the installed skill. External translation or OCR services are optional only when explicitly authorized for the selected documents.
+The installer adds the Clouds metadata from `agents/clouds-coder.json` only to the Clouds copy. The other copies retain standard skill frontmatter. `codex-legacy` is available for a Codex installation that specifically requires `.codex/skills`.
 
-Host versions change. Official references used when preparing adapters: [Claude Code](https://code.claude.com/docs/en/skills), [OpenCode](https://opencode.ai/docs/skills/), [Codex skills](https://developers.openai.com/codex/skills), [Clouds_Coder source](https://github.com/FonaTech/Clouds-Coder). See validation for exact verification limits; these links do not imply live-host certification.
+## 3. Confirm discovery
+
+Refresh or restart the client's skill discovery, then confirm that `document-translation` is available. Ask it to translate a small file before starting a large collection. Save translation projects outside the installed skill folder.
+
+Existing destinations are renamed to timestamped backups. Failed copies restore the backup. To roll back later, remove the new copy and rename the printed backup to its original name. The installer rejects a symlink destination.
+
+## Optional Claude Code plugin
+
+The repository includes `.claude-plugin/plugin.json` and a marketplace manifest. In a compatible Claude Code version, load the repository with:
+
+```bash
+claude --plugin-dir /path/to/Translation_Skills
+```
+
+The files in `claude-plugin/` mirror those manifests for browsing. The repository root is the plugin directory. This route is optional; copying the standard skill is sufficient.
+
+## Compatibility checks
+
+Repository tests cover installation paths, backups and metadata. They do not establish interactive compatibility with every client version. See [reproducible checks](REPRODUCIBILITY.md).
+
+Client references: [Codex](https://developers.openai.com/codex/skills), [Claude Code](https://code.claude.com/docs/en/skills), [OpenCode](https://opencode.ai/docs/skills/), [Clouds_Coder](https://github.com/FonaTech/Clouds-Coder).

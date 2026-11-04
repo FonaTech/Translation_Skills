@@ -1,9 +1,9 @@
-# Public notices and forms
+# Public notices
 
-Decision to practice: Submission versus receipt, deadline, conditional eligibility.
+Review focus: Receipt deadlines and conditional eligibility.
 
-Use the author-owned paired text in [paired-cases.json](../examples/paired-cases.json), domain key `public-service`. Read the source as a coherent passage; establish faithful meaning before interpretive wording. These are fictional fixtures, not domain advice.
+Read the `public-service` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
 
-Acceptance: Keep received-by 12 May 17:00, June review and places-remaining condition. Avoid implying automatic rejection or acceptance.
+Keep the received-by deadline of 17:00 on 12 May and the June review period. Late applications are considered only if places remain. Preserve the distinction between a deadline for receipt and a deadline for sending.
 
-Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.
+Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.

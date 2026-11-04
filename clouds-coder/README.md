@@ -1,3 +1,12 @@
-# Clouds_Coder adapter
+# Clouds_Coder
 
-The maintained source is [document-translation](../skills/document-translation/SKILL.md). Install with [tools/install.py](../tools/install.py), following [INSTALL](../docs/INSTALL.md). This directory documents the adapter; it is not a second independent skill copy. Run the portable checks in [REPRODUCIBILITY](../docs/REPRODUCIBILITY.md). Interactive client compatibility still depends on the installed host version and has not been claimed unless it was actually exercised.
+Prepare the Python environment using the [installation guide](../docs/INSTALL.md), then preview and apply the copy:
+
+```bash
+python3 tools/install.py --targets clouds --clouds-root /path/to/skills
+python3 tools/install.py --targets clouds --clouds-root /path/to/skills --apply
+```
+
+Refresh skill discovery and invoke it with a request to load `document-translation`. The maintained [skill source](../skills/document-translation/SKILL.md) is shared across clients.
+
+Installation tests cover file copies and metadata. See [validation scope](../skills/document-translation/references/validation-summary.md) for what was exercised.

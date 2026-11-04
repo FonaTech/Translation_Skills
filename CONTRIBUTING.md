@@ -1,7 +1,18 @@
 # Contributing
 
-Keep one portable skill core. New domains belong in optional cases, not hardcoded branches. Preserve selected scope, dual-edition completeness, source provenance and honest review records. Add a fixture only when it tests an observable failure mode; use author-owned material or document rights and exact excerpt scope.
+Keep the shared translation workflow usable across clients and document types. Add domain examples when they explain a concrete translation decision; avoid domain-specific branches in the core unless extraction genuinely requires them.
 
-Run `python3 tools/validate.py` and `python3 -m unittest discover -s tests -v`. For pagination changes, run the integration fixture in an external work directory, inspect the actual rendered pages and update validation evidence. Record language/host versions and unsuccessful tests as well as passes. Do not mark semantic checks complete by programmatically generating generic review notes.
+Preserve selected scope, source locations, stable IDs and both complete editions. Fix the editable content or generator rather than generated outputs. Use author-owned test material, or document the rights and exact excerpt scope.
 
-Do not commit private source files, machine paths, credentials, downloaded client runtimes, pycache or third-party PDFs. Update checksums after the final changes. Contributions should retain MIT-compatible original code and proper attribution for any copied third-party material.
+Before submitting:
+
+```bash
+python3 tools/validate.py
+python3 -m unittest discover -s tests -v
+python3 tools/checksums.py --write
+python3 tools/checksums.py
+```
+
+For extraction or pagination changes, run the relevant fixture in a fresh external work directory and inspect the affected source and rendered pages. Describe the test environment, actual checks and remaining failures. Record semantic or visual review only after performing it.
+
+Keep private sources, credentials, machine-specific paths, downloaded runtimes and temporary outputs out of the repository. Preserve third-party notices for any material you add. See [reproducible checks](docs/REPRODUCIBILITY.md) for format, browser and corpus tests.

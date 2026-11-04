@@ -2,6 +2,7 @@
 from pathlib import Path
 import base64,csv,html,json,os
 from alignment import rows as aligned_rows
+from reader_ui import toolbar as reader_toolbar, runtime as reader_runtime, styles as reader_styles
 from translate import project,units,audit_data,write,snap,sha,safe
 A=Path(__file__).resolve().parent.parent/'assets'
 LABELS={
@@ -20,6 +21,10 @@ def page_is_visually_empty(page):
  return not any(sample<255 for sample in pix.samples)
 def loc(b):
  s=b['source'];return s['document_id']+(' · p'+str(s['page']) if s.get('page') else ' · '+str(s.get('element','')))
+def alignment_pair(b,u,l,editions,labels):
+ uid=h(u['id']);attrs=' data-block="'+h(b['id'])+'" data-source-page="'+h(b['source'].get('page',''))+'"'
+ return '<article class="pair"'+attrs+'><div class="locator pair-start">'+h(u['id']+' · '+loc(b))+'</div><div class="pair-grid">'+'<section class="pair-source" aria-label="'+h(labels['original'])+'"><p class="paragraph original" dir="auto"><span data-uid="'+uid+':source">'+h(u['source'])+'</span></p></section>'+''.join('<section class="pair-target" aria-label="'+h(labels[ed])+'"><p class="paragraph target"><span data-uid="'+uid+':'+ed+'">'+h(value(u,l,ed))+'</span></p></section>' for ed in editions)+'</div></article>'
+
 def block_attrs(b):
  p=b.get('presentation',{});role=p.get('role','body');span=p.get('span','auto')
  if role not in {'body','metadata','abstract','keywords','caption','equation','note'}:role='body'
@@ -28,7 +33,7 @@ def block_attrs(b):
 def block_html(r,b,l,e,labels):
  typ=b['type'];txt=' '.join(uspan(u,l,e) for u in b.get('units',[]));locator='<div class="locator">'+h(loc(b))+' · '+h(b['id'])+'</div>';attrs=block_attrs(b)
  if typ=='heading':
-  lev=max(2,min(6,b.get('level',2)+1));return '<h'+str(lev)+attrs.replace('paragraph ','')+'>'+txt+'</h'+str(lev)+'>'
+  lev=max(2,min(6,b.get('level',2)+1));return '<h'+str(lev)+(' data-title="true"' if b.get('level',2)==1 else '')+attrs.replace('paragraph ','')+'>'+txt+'</h'+str(lev)+'>'
  if typ=='table':
   lookup={u['id']:u for u in b['units']};n=b.get('header_rows',1);rows=[]
   for i,row in enumerate(b['rows']):
@@ -36,20 +41,29 @@ def block_html(r,b,l,e,labels):
   caps=''.join('<caption data-block="'+h(cb['id'])+'" data-source-page="'+h(cb['source'].get('page',''))+'">'+' '.join(uspan(u,l,e) for u in cb.get('units',[]))+'</caption>' for cb in b.get('_captions',[]))
   return '<div'+attrs.replace('paragraph','table-wrap',1)+'><table>'+caps+'<thead>'+''.join(rows[:n])+'</thead><tbody>'+''.join(rows[n:])+'</tbody></table></div>'
  if typ in {'image','equation'}:
-  p=safe(r,b['asset']);ext=p.suffix.lower().lstrip('.');mime='image/jpeg' if ext in {'jpg','jpeg'} else 'image/'+ext
+  p=safe(r,b['asset']);ext=p.suffix.lower().lstrip('.');mime='image/svg+xml' if ext=='svg' else 'image/jpeg' if ext in {'jpg','jpeg'} else 'image/'+ext
+  if ext=='svg':
+   from vector_assets import validate_svg,embedded_raster_colors
+   validate_svg(p.read_bytes())
+   if any(x['components'] not in (1,3) for x in embedded_raster_colors(p.read_bytes())):raise ValueError('Unsafe SVG raster colors: re-export from the source PDF before publishing.')
   src='data:'+mime+';base64,'+base64.b64encode(p.read_bytes()).decode();label=b.get('label_policy','unreviewed')
+  fallback=''
+  if b.get('asset_fallback'):
+   fp=safe(r,b['asset_fallback'])
+   if fp.suffix.lower()!='.png':raise ValueError('Figure export fallback must be PNG.')
+   fallback=' data-raster-fallback="data:image/png;base64,'+base64.b64encode(fp.read_bytes()).decode()+'"'
   caption=''.join('<p'+block_attrs(cb)+'>'+' '.join(uspan(u,l,e) for u in cb.get('units',[]))+'</p>'+''.join('<div class="editor-note">'+h(n.get('note',''))+'</div>' for u in cb.get('units',[]) for n in u.get('notes',[]) if n.get('language',l)==l) for cb in b.get('_captions',[]))
-  return '<figure'+attrs.replace('paragraph','figure-block',1)+'><img src="'+src+'" alt="'+h(' '.join(value(u,l,e) for u in b.get('units',[])) or b['id'])+'" style="width:'+str(b.get('width_mm',150))+'mm"><figcaption>'+caption+('<div class="label-map">'+txt+'</div>' if txt else '')+'</figcaption>'+locator+('<div class="asset-note">'+h(b.get('label_note',label))+'</div>' if label not in {'no-text','translated'} else '')+'</figure>'
+  return '<figure'+attrs.replace('paragraph','figure-block',1)+'><img src="'+src+'"'+fallback+' alt="'+h(' '.join(value(u,l,e) for u in b.get('units',[])) or b['id'])+'" style="width:'+str(b.get('width_mm',150))+'mm"><figcaption>'+caption+('<div class="label-map">'+txt+'</div>' if txt else '')+'</figcaption>'+locator+('<div class="asset-note">'+h(b.get('label_note',label))+'</div>' if label not in {'no-text','translated'} else '')+'</figure>'
  return '<p'+attrs+'>'+txt+'</p>'
 def make_document(m,c,l,e,body,layout_plan):
  from layout_engine import design_css
- lab=LABELS.get(l.split('-')[0],LABELS['en']);direction=m.get('direction',{}).get(l,'ltr');css=(A/'layout.css').read_text()+'\n'+(A/'layout-flow.css').read_text()+'\n'+(A/'families.css').read_text()+'\n'+design_css(layout_plan);js='const FAMILY_CSS="";const CATALOG=[];'+(A/'layout-runtime.js').read_text()+'\n'+(A/'paginate.js').read_text();title=m['title']+' · '+lab.get(e,e)
+ lab=LABELS.get(l.split('-')[0],LABELS['en']);direction=m.get('direction',{}).get(l,'ltr');css=(A/'layout.css').read_text()+'\n'+(A/'layout-flow.css').read_text()+'\n'+(A/'families.css').read_text()+'\n'+design_css(layout_plan);js='const FAMILY_CSS="";const CATALOG=[];'+(A/'layout-model.js').read_text()+'\n'+(A/'layout-planner.js').read_text()+'\n'+(A/'layout-runtime.js').read_text()+'\n'+(A/'paginate.js').read_text();title=m['title']+' · '+lab.get(e,e)
  sections=[]
  for ds in layout_plan['documents']:
   x=ds['design'];source=next(z for z in c['sources'] if z['id']==ds['document_id'])
-  sections.append({'title':source.get('display_title',source['name']),'header':source.get('running_title',source.get('display_title',m['title'])),'footer':m.get('author_credit',''),'dir':direction,'familyClass':'family-'+x['family'],'design':{'w':x['page_mm'][0],'h':x['page_mm'][1],'mx':x['margin_x_mm'],'my':x['margin_y_mm'],'cols':1 if e=='alignment' else x['columns'],'gap':x.get('column_gap_mm',7),'size':x['body_pt'],'leading':x['line_height'],'para':x.get('paragraph_gap_mm',1.8),'head':x.get('heading_gap_mm',3),'accent':x['accent'],'tableSize':x.get('table_pt',8),'cellPad':x.get('cell_padding_mm',1),'titleSize':x.get('title_pt',20),'captionSize':x.get('caption_pt',8),'font':x.get('font','serif')}})
- js='window.layoutSections='+json.dumps(sections,ensure_ascii=False).replace('<','\\u003c')+';'+js+'\n'+'''window.openTranslationEditor=()=>{let popup;const listener=event=>{if(event.source!==popup)return;if(event.data?.type==='document-translation-editor-ready'){popup.postMessage({type:'document-translation-open-html',title:document.title,html:'<!doctype html>'+document.documentElement.outerHTML},'*');return;}if(event.data?.type==='document-translation-editor-loaded'||event.data?.type==='document-translation-editor-error')window.removeEventListener('message',listener);};window.addEventListener('message',listener);popup=window.open('document-layout-editor.html','documentTranslationLayoutEditor');if(!popup){window.removeEventListener('message',listener);alert('Please allow this local editor window to open.');}};'''
- return '<!doctype html><html lang="'+h(l)+'" dir="'+h(direction)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\';script-src \'unsafe-inline\';style-src \'unsafe-inline\';img-src data: blob:;font-src data:;connect-src \'none\';base-uri \'none\'"><meta name="creator" content="Document Translation Skill"><title>'+h(title)+'</title><style>'+css+'</style></head><body data-edition="'+h(lab.get(e,e))+'" data-footer="'+h(m.get('author_credit',''))+'" data-kind="'+e+'"><nav class="toolbar"><span>'+h(title)+'</span><button onclick="document.body.classList.toggle(&quot;reading-flow&quot;)">阅读 / 页面</button><button onclick="window.openTranslationEditor()">在布局编辑器中打开</button><button onclick="window.print()">'+h(lab['print'])+'</button></nav><main class="reader">'+body+'</main><main class="print-stage" aria-hidden="true"></main><script>'+js+'</script></body></html>'
+  sections.append({'alignmentLabels':[lab['original']]+[lab[ed] for ed in m['editions']] if e=='alignment' else None,'title':source.get('display_title',source['name']),'header':source.get('running_title',source.get('display_title',m['title'])),'footer':m.get('author_credit',''),'dir':direction,'familyClass':'family-'+x['family'],'design':{'w':x['page_mm'][0],'h':x['page_mm'][1],'mx':x['margin_x_mm'],'my':x['margin_y_mm'],'cols':1 if e=='alignment' else x['columns'],'gap':x.get('column_gap_mm',7),'size':x['body_pt'],'leading':x['line_height'],'para':x.get('paragraph_gap_mm',1.8),'head':x.get('heading_gap_mm',3),'accent':x['accent'],'tableSize':x.get('table_pt',8),'cellPad':x.get('cell_padding_mm',1),'titleSize':x.get('title_pt',20),'captionSize':x.get('caption_pt',8),'font':x.get('font','serif')}})
+ js='window.layoutSections='+json.dumps(sections,ensure_ascii=False).replace('<','\\u003c')+';'+js+'\n'+'''window.openTranslationEditor=()=>{let popup;const listener=event=>{if(event.source!==popup)return;if(event.data?.type==='document-translation-editor-ready'){popup.postMessage({type:'document-translation-open-html',title:document.title,html:'<!doctype html>'+document.documentElement.outerHTML},'*');return;}if(event.data?.type==='document-translation-editor-loaded'||event.data?.type==='document-translation-editor-error')window.removeEventListener('message',listener);};window.addEventListener('message',listener);popup=window.open('document-layout-editor.html','documentTranslationLayoutEditor');if(!popup){window.removeEventListener('message',listener);alert(window.TranslationReader.t('popup'));}};'''
+ return '<!doctype html><html lang="'+h(l)+'" dir="'+h(direction)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\';script-src \'unsafe-inline\';style-src \'unsafe-inline\';img-src data: blob:;font-src data:;connect-src \'none\';base-uri \'none\'"><meta name="creator" content="Document Translation Skill"><title>'+h(title)+'</title><style>'+css+reader_styles()+'</style></head><body data-edition="'+h(lab.get(e,e))+'" data-footer="'+h(m.get('author_credit',''))+'" data-kind="'+e+'">'+reader_toolbar(m['title'],e)+'<main class="reader">'+body+'</main><script>'+reader_runtime()+js+'</script></body></html>'
 
 def wrap_document(source,design,body,l,e,lab,has_title=False):
  d=design['design'];ident=source['id'];scope=source.get('selection_scope','all');scope=json.dumps(scope,ensure_ascii=False) if isinstance(scope,dict) else str(scope)
@@ -59,8 +73,10 @@ def wrap_document(source,design,body,l,e,lab,has_title=False):
  # The document boundary carries its own measured page design. No synthetic headings or labels are inferred.
  return '<section class="layout-document family-'+h(d['family'])+'" data-layout-doc="'+h(ident)+'" data-columns="'+str(d['columns'] if e!='alignment' else 1)+'" data-family="'+h(d['family'])+'" data-route="'+h(design['route'])+'" data-template="'+h(d['id'])+'">'+mast+body+'</section>'
 
-def build(path):
+def build(path,browser=None):
  from layout_engine import plan
+ from asset_fidelity import verify_project
+ verify_project(path,browser)
  r,m,c=project(path);au=audit_data(r,m,c)
  if au['errors']:write(r/'reports/audit.json',au);raise ValueError('Build blocked: incomplete/invalid content; inspect reports/audit.json')
  layout_plan=plan(r,m,c);write(r/'reports/layout-plan.json',layout_plan);designs={d['document_id']:d for d in layout_plan['documents']}
@@ -82,13 +98,13 @@ def build(path):
        for ci,uid in enumerate(row,1):
         for u in aligned_rows(cells[uid],l):
          ident=h(u['id']);lines.append('<tr><td title="'+ident+'">'+str(ri)+':'+str(ci)+'</td><td><span data-uid="'+ident+':source">'+h(u['source'])+'</span></td>'+''.join('<td><span data-uid="'+ident+':'+ed+'">'+h(value(u,l,ed))+'</span></td>' for ed in m['editions'])+'</tr>')
-      body.append('<p class="locator">'+h(loc(b)+' · '+b['id'])+'</p><div class="table-wrap alignment-cells"><table><colgroup><col style="width:12%"><col style="width:29%"><col style="width:29%"><col style="width:30%"></colgroup><thead><tr><th>行:列 / R:C</th><th>'+h(lab['original'])+'</th>'+''.join('<th>'+h(lab[ed])+'</th>' for ed in m['editions'])+'</tr></thead><tbody>'+''.join(lines)+'</tbody></table></div>')
+      body.append('<p class="locator" data-block="'+h(b['id'])+'" data-source-page="'+h(b['source'].get('page',''))+'">'+h(loc(b)+' · '+b['id'])+'</p><div class="table-wrap alignment-cells" data-block="'+h(b['id'])+'" data-source-page="'+h(b['source'].get('page',''))+'"><table><colgroup><col style="width:12%"><col style="width:29%"><col style="width:29%"><col style="width:30%"></colgroup><thead><tr><th>行:列 / R:C</th><th>'+h(lab['original'])+'</th>'+''.join('<th>'+h(lab[ed])+'</th>' for ed in m['editions'])+'</tr></thead><tbody>'+''.join(lines)+'</tbody></table></div>')
      elif e=='alignment':
       # Alignment archives must preserve the figures too, including vector crops.
       if b['type'] in {'image','equation'}:body.append(block_html(r,{**b,'units':[]},l,'faithful',lab))
       for parent in b.get('units',[]):
        for u in aligned_rows(parent,l):
-        uid=h(u['id']);body.append('<article class="pair"><div class="locator pair-start">'+h(u['id']+' · '+loc(b))+'</div><h6 class="pair-label">'+h(lab['original'])+'</h6><p class="paragraph original" dir="auto"><span data-uid="'+uid+':source">'+h(u['source'])+'</span></p>'+''.join('<h6 class="pair-label">'+h(lab[ed])+'</h6><p class="paragraph target"><span data-uid="'+uid+':'+ed+'">'+h(value(u,l,ed))+'</span></p>' for ed in m['editions'])+'</article>')
+        body.append(alignment_pair(b,u,l,m['editions'],lab))
      else:
       body.append(block_html(r,b,l,e,lab));body+=['<p class="editor-note">'+h(lab['note']+': '+n.get('note',''))+'</p>' for u in b.get('units',[]) for n in u.get('notes',[]) if n.get('language',l)==l]
     has_title=e!='alignment' and any(b['source']['document_id']==source['id'] and b['type']=='heading' and b.get('level',2)==1 for b in c['blocks'])
@@ -105,20 +121,27 @@ def render(path,browser=None,refine=False):
  from playwright.sync_api import sync_playwright
  from layout_engine import freshness
  import fitz,shutil
+ from asset_fidelity import verify_project,verify_rendered_figures
+ fidelity=verify_project(path,browser)
+ if fidelity['content_changed']:build(path,browser)
  r,m,c=project(path);snapshot=snap(m,c);ok,why=freshness(r,m,c)
  if not ok:raise ValueError('Build first: '+why)
  lp=__import__('translate').read(r/'reports/layout-plan.json');results=[];exe=browser or os.environ.get('TRANSLATION_BROWSER');attempts=[]
  with sync_playwright() as p:
   br=p.chromium.launch(headless=True,**({'executable_path':exe} if exe else {}))
   for file in [r/'outputs'/f'{lang}-{ed}.html' for lang in m['target_languages'] for ed in m['editions']+['alignment']]:
-   chosen=None
+   chosen=None;selected_sections=None;optimization=None
    for round in range(3):
     page=br.new_page(viewport={'width':1280,'height':1400});page_errors=[];page.on('pageerror',lambda e:page_errors.append(str(e)));page.goto(file.as_uri(),wait_until='load',timeout=90000)
-    page.wait_for_function('window.translationReady || window.translationError',timeout=90000)
+    page.wait_for_function('()=>window.translationReady || window.translationError',timeout=90000)
+    if round==0:
+     ranked=page.evaluate('()=>window.optimizeTranslationLayout()')
+     selected_sections=page.evaluate('()=>window.layoutChosenSections');optimization=ranked['optimization']
     if round:
-     page.evaluate('(r)=>{window.translationReady=false;window.translationError=null;window.layoutAdjustmentRound=r;}',round)
+     page.evaluate('(data)=>{window.translationReady=false;window.translationError=null;window.layoutChosenSections=data.sections;window.layoutAdjustmentRound=data.round;}',{'round':round,'sections':selected_sections})
      page.evaluate('paginate().catch(e=>{window.translationError=String(e);window.translationLayout={pass:false,error:String(e)};})')
-    page.wait_for_function('window.translationReady || window.translationError',timeout=90000);err=page.evaluate('window.translationError');layout=page.evaluate('window.translationLayout') or {'pass':False,'error':err};pdf=r/'reports/candidates'/f'{file.stem}-adjust-{round}.pdf';pdf.parent.mkdir(exist_ok=True)
+    page.wait_for_function('()=>window.translationReady || window.translationError',timeout=90000);err=page.evaluate('window.translationError');layout=page.evaluate('window.translationLayout') or {'pass':False,'error':err};layout['optimization']=optimization;pdf=r/'reports/candidates'/f'{file.stem}-adjust-{round}.pdf';pdf.parent.mkdir(exist_ok=True)
+    page.emulate_media(media='print')
     page.pdf(path=str(pdf),print_background=True,prefer_css_page_size=True);doc=fitz.open(pdf);removed_blank_pages=[]
     # Chromium can append a default Letter page after named-size CSS pages.
     # Remove only provably empty trailing pages; interior blanks remain failures.
@@ -136,19 +159,27 @@ def render(path,browser=None,refine=False):
     if page_errors:layout={**layout,'pass':False,'errors':layout.get('errors',[])+['Browser page error: '+x for x in page_errors]}
     if len(doc)!=dom_pages:
      layout={**layout,'pass':False,'errors':layout.get('errors',[])+['PDF/DOM page count mismatch'],'pdf_page_count':len(doc),'dom_page_count':dom_pages}
+    figure_report=None
+    if len(doc)==dom_pages:
+     figure_report=verify_rendered_figures(r,page,pdf,file.stem+'-adjust-'+str(round))
+     layout['figure_fidelity']={'pass':figure_report['pass'],'figures':len(figure_report['figures']),'missing_figures':figure_report['missing_figures']}
+     if not figure_report['pass']:layout={**layout,'pass':False,'errors':layout.get('errors',[])+['Actual PDF figure appearance differs from source; inspect reports/figure-pdf-'+file.stem+'-adjust-'+str(round)+'.json']}
     attempts.append({'file':file.name,'adjustment_round':round,'route':'source' if all(d['route']=='source' for d in lp['documents']) else 'template','document_ids':[d['document_id'] for d in lp['documents']],'pass':layout.get('pass',False) and not actual_empty,'error':err,'layout':layout,'pdf_pages':len(doc),'removed_trailing_blank_pages':list(reversed(removed_blank_pages)),'empty_pdf_pages':actual_empty,'preview_files':preview,'candidate_pdf':pdf.relative_to(r).as_posix(),'candidate_sha256':sha(pdf),'adjustments':['initial inherited design','preserve columns/page ratio; reduce gaps and fit images within available region','preserve columns/page ratio; relax heading spacing and lower type size within readability bound'][round]})
     doc.close();page.close()
-    if layout.get('pass') and not actual_empty:chosen=(pdf,layout,round)
+    if layout.get('pass') and not actual_empty:chosen=(pdf,layout,round,figure_report)
     if layout.get('pass') and (not refine or round>=1):break
    if chosen:
-    candidate,layout,rd=chosen;pdf=file.with_suffix('.pdf');shutil.copy2(candidate,pdf)
+    candidate,layout,rd,figure_report=chosen;pdf=file.with_suffix('.pdf');shutil.copy2(candidate,pdf)
     # Embed the chosen adjustment so opening the HTML reproduces the same pagination.
-    htmltext=file.read_text();htmltext=__import__('re').sub(r'<script data-layout-adjustment>.*?</script>','',htmltext);htmltext=htmltext.replace('<script>','<script data-layout-adjustment>window.layoutAdjustmentRound='+str(rd)+';</script><script>',1);file.write_text(htmltext)
+    htmltext=file.read_text();htmltext=__import__('re').sub(r'<script data-layout-adjustment>.*?</script>','',htmltext);settings='window.layoutAdjustmentRound='+str(rd)+';window.layoutChosenSections='+json.dumps(selected_sections,ensure_ascii=False).replace('<','\\u003c')+';window.layoutOptimization='+json.dumps(optimization,ensure_ascii=False).replace('<','\\u003c')+';';htmltext=htmltext.replace('<script>','<script data-layout-adjustment>'+settings+'</script><script>',1);file.write_text(htmltext)
     doc=fitz.open(pdf);doc.set_metadata({'title':m['title']+' · '+file.stem,'author':m.get('author_credit',''),'subject':'Translated reading edition; source scope and reviews in accompanying reports','creator':'Document Translation Skill','producer':'Chromium / PyMuPDF'});doc.saveIncr();pd=r/'reports/pages'/file.stem;pd.mkdir(parents=True,exist_ok=True)
     for old in pd.glob('page-*.png'):old.unlink()
     for i,pg in enumerate(doc):pg.get_pixmap(matrix=fitz.Matrix(1,1)).save(pd/f'page-{i+1:04d}.png')
     txt=''.join(pg.get_text() for pg in doc);(r/'reports'/(file.stem+'-pdf-text.txt')).write_text(txt)
     results.append({'file':file.name,'pdf':pdf.name,'pages':len(doc),'layout':layout,'chosen_adjustment_round':rd,'empty_pdf_pages':[i+1 for i,pg in enumerate(doc) if page_is_visually_empty(pg)],'html_sha256':sha(file),'pdf_sha256':sha(pdf)});doc.close()
+    if figure_report is not None:
+     figure_report={**figure_report,'edition':file.stem,'pdf_sha256':sha(pdf)}
+     write(r/'reports'/('figure-pdf-'+file.stem+'.json'),figure_report)
    else:results.append({'file':file.name,'pdf':file.with_suffix('.pdf').name,'layout':{'pass':False},'error':'No source-preserving adjustment passed. Inspect candidate pages; template fallback requires severe visual rejection via layout-review.'})
   br.close()
  write(r/'reports/render-attempts.json',{'snapshot':snapshot,'attempts':attempts,'automatic_template_switching':False,'review_required':'Rendered candidates are evidence, not aesthetic or semantic certification.'})

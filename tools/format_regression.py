@@ -37,15 +37,21 @@ def run(output):
    target=conv/(source.stem+'.'+ext)
    if proc.returncode or not target.is_file():raise RuntimeError(f'Local conversion failed for {stem}: {proc.stderr[-300:]}')
    dst=fixtures/(stem+'.'+ext);shutil.copy2(target,dst);generated.append(dst)
-  for source,fmt,ext,stem in [(fixtures/'word.docx','odt','odt','open-text'),(fixtures/'book.xlsx','ods','ods','open-sheet'),(fixtures/'slides.pptx','odp','odp','open-slides'),(fixtures/'word.docx','doc:"MS Word 97"','doc','legacy-word'),(fixtures/'book.xlsx','xls:"MS Excel 97"','xls','legacy-sheet'),(fixtures/'slides.pptx','ppt:"MS PowerPoint 97"','ppt','legacy-slides')]:convert(source,fmt,ext,stem)
+  for source,fmt,ext,stem in [(fixtures/'word.docx','odt','odt','open-text'),(fixtures/'book.xlsx','ods','ods','open-sheet'),(fixtures/'slides.pptx','odp','odp','open-slides'),(fixtures/'word.docx','doc:MS Word 97','doc','legacy-word'),(fixtures/'book.xlsx','xls:MS Excel 97','xls','legacy-sheet'),(fixtures/'slides.pptx','ppt:MS PowerPoint 97','ppt','legacy-slides')]:convert(source,fmt,ext,stem)
  sources=[p for p in sorted(fixtures.iterdir()) if p.is_file() and p.suffix.lower() in t.SUPPORTED]
  project=r/'extraction-project';t.init(argparse.Namespace(project=str(project),title='Format regression fixtures',languages='zh-Hans',style='editorial',page_size='A4',columns=1))
  with contextlib.redirect_stdout(open(os.devnull,'w')):t.ingest(argparse.Namespace(project=str(project),files=[str(p) for p in sources],pages=None,password=None,order='auto',tables=False))
- _,_,content=t.project(project);records=[];passed=True
+ _,meta,content=t.project(project);image_engine='tesseract' if shutil.which('tesseract') else 'vision' if shutil.which('swift') and sys.platform=='darwin' else None
+ if image_engine:
+  for source in content['sources']:
+   if Path(source['name']).suffix.lower() in {'.png','.jpg','.jpeg','.tif','.tiff','.webp'}:
+    with contextlib.redirect_stdout(open(os.devnull,'w')):t.ocr(argparse.Namespace(project=str(project),document=source['id'],pages=None,engine=image_engine,languages='eng' if image_engine=='tesseract' else 'en-US',allow_native=False))
+  _,meta,content=t.project(project)
+ records=[];passed=True
  for source in content['sources']:
   blocks=[b for b in content['blocks'] if b['source']['document_id']==source['id']];units=[u for b in blocks for u in b.get('units',[])];ok=bool(blocks and units)
-  records.append({'filename':source['name'],'format':Path(source['name']).suffix.lower(),'blocks':len(blocks),'units':len(units),'conversion_route':source.get('conversion',{}).get('route','native'),'pass':ok});passed &=ok
- report={'schema_version':'1.0.1','fixture_count':len(sources),'format_routes':records,'expected_formats':sorted(t.SUPPORTED),'local_converter_available':bool(soffice),'translation_generated':False,'meaning':'Owned structural/extraction fixtures only; the invoking model must translate and compare source semantics.','pass':passed and len(records)==len(sources)}
+  records.append({'filename':source['name'],'format':Path(source['name']).suffix.lower(),'blocks':len(blocks),'units':len(units),'conversion_route':source.get('conversion',{}).get('route','native'),'image_ocr_engine':image_engine if Path(source['name']).suffix.lower() in {'.png','.jpg','.jpeg','.tif','.tiff','.webp'} else None,'pass':ok});passed &=ok
+ report={'schema_version':'1.0.1','fixture_count':len(sources),'format_routes':records,'expected_formats':sorted(t.SUPPORTED),'local_converter_available':bool(soffice),'image_ocr_engine':image_engine,'translation_generated':False,'meaning':'Owned structural/extraction fixtures only; the invoking model must translate and compare source semantics.','pass':passed and len(records)==len(sources)}
  t.write(r/'format-regression.json',report);print(json.dumps(report,ensure_ascii=False,indent=2));return int(not report['pass'])
 
 def main():

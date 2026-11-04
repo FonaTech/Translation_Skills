@@ -2,3 +2,12 @@
 
 /* Rendered page cards are the default screen artifact; reader flow is optional. */
 @media screen{body.layout-ready:not(.reading-flow) .reader{display:none}body.layout-ready:not(.reading-flow) #edPages{position:static;visibility:visible;padding:24px 0;overflow-x:auto}body.reading-flow #edPages{display:none}.ed-page{color:#18242e}.ed-page .block-body{text-align:justify;hyphens:auto}.ed-page .label-map{font-size:.86em;color:#53636e;margin-top:1mm}.ed-page .block-metadata{color:#53636e}}
+
+/* Aligned source and dual translations share a row, retaining stable locators. */
+.pair-grid{display:grid;grid-template-columns:1.12fr 1fr 1fr;gap:3mm;align-items:start}.pair-grid>section{min-width:0}.ed-page .pair{margin:0 0 2mm;padding:1.5mm 0 0;border-top:.5px solid #bdcbd3;break-inside:avoid}.ed-page .pair .pair-start{border:0;margin:0 0 .8mm;padding:0;font-size:6pt}.ed-page .pair .pair-label{margin:0 0 .8mm;font-size:6.8pt;line-height:1.3}.ed-page .pair .paragraph{font-size:9pt;line-height:1.5;margin:0;white-space:pre-wrap}.ed-page .pair-grid>section+section{border-inline-start:.5px solid #d8e0e5;padding-inline-start:2mm}@media(max-width:700px){.reader .pair-grid{grid-template-columns:1fr}}
+
+/* Native PDF line wraps are source data, not target column breaks. */
+.ed-page .pair .pair-source .paragraph{white-space:normal}
+
+/* Compact alignment keeps column labels once per page, all unit IDs and all source/target text. */
+.alignment-page-legend{display:grid;grid-template-columns:1.12fr 1fr 1fr;gap:3mm;height:6mm;align-items:center;font:7pt/1.2 sans-serif;color:#405565;border-bottom:.5px solid #cdd7de}.ed-page.alignment-page .ed-page-body{height:calc(var(--page-height) - 2 * var(--margin-y) - 20mm)}.ed-page .pair{margin:0 0 1mm;padding:1mm 0 0}.ed-page .pair .pair-start{margin:0 0 .5mm;font-size:6pt}.ed-page .pair .pair-grid{gap:3mm}.ed-page .pair .paragraph{font-size:9pt;line-height:1.4;margin:0}

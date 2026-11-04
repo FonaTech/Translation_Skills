@@ -19,7 +19,7 @@ The source document supplies a design reference, not a universal template. Recon
 - Do not conceal extraction loss by adding prose. Exact claims, names, units, data, citation markers and figure identifiers remain traceable to their source units. Notes stay visually distinct from translated prose.
 - Mark unresolved clipping, missing fonts, unreadable symbols, figure-label exceptions and low-quality scans. Never mark a page successful only because it fits a rectangle.
 
-The browser runtime uses deterministic measurements and bounded CSS adjustment; there is no bundled ML model. Client-side presentation heuristics propose and validate geometry. The invoking language model supplies source-aware judgement and makes documented refinements inside the current agent loop. Scores are rankings, not calibrated aesthetic confidence.
+The browser runtime measures actual DOM geometry and compares up to 24 bounded source-preserving adjustments. An embedded 24→12→1 pairwise neural ranker orders candidates using measured features; independent content and geometry gates reject unsafe candidates, and manual parameter locks remain authoritative. Training uses original synthetic documents and disclosed engineering labels, not human aesthetic ratings. The invoking agent supplies source-aware visual judgement. See the [model card](../assets/models/MODEL_CARD.md) and [bounded translation loop](reliable-agent-loop.md). Scores are rankings, not calibrated aesthetic confidence.
 
 ## Evidence checklist fields
 

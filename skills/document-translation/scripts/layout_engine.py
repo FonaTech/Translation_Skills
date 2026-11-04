@@ -9,6 +9,13 @@ ASSETS=Path(__file__).resolve().parent.parent/'assets'
 def catalog():return read(ASSETS/'layout-catalog.json')['presets']
 def clamp(x,lo,hi):return max(lo,min(hi,float(x)))
 def color(n):return '#'+format(int(n)&0xffffff,'06x')
+def readable_accent(value,fallback='#304659'):
+ """Ignore pale watermark/background text when choosing ink on white."""
+ if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):return fallback
+ channels=[int(value[i:i+2],16)/255 for i in (1,3,5)]
+ linear=[x/12.92 if x<=.04045 else ((x+.055)/1.055)**2.4 for x in channels]
+ luminance=sum(w*x for w,x in zip((.2126,.7152,.0722),linear))
+ return value if 1.05/(luminance+.05)>=4.5 else fallback
 def median(xs,default):return statistics.median(xs) if xs else default
 def font_kind(s):return 'sans' if re.search(r'arial|helvetica|sans|calibri|gothic|黑体',s,re.I) else 'serif'
 def pdf_profile(path,selected_pages=None):
@@ -24,7 +31,9 @@ def pdf_profile(path,selected_pages=None):
     ss=[s for s in line['spans'] if s['text'].strip()];spans+=ss
     for s in ss:
      sizes.extend([s['size']]*min(80,len(s['text'])));fonts.extend([s['font']]*min(80,len(s['text'])))
-     if s['color'] not in {0,16777215}:colors.extend([s['color']]*min(30,len(s['text'])))
+     # Some PyMuPDF versions expose signed ARGB; compare the RGB channels.
+     rgb=int(s['color'])&0xffffff
+     if rgb not in {0,16777215} and readable_accent(color(rgb),None):colors.extend([rgb]*min(30,len(s['text'])))
     if len(b['lines'])>1:
      ys=[l['bbox'][1] for l in b['lines']];linegaps.extend(ys[i+1]-ys[i] for i in range(len(ys)-1) if 5<ys[i+1]-ys[i]<40)
   body=median([s['size'] for s in spans],11);hs=[s for s in spans if s['size']>body*1.35];headings+=len(hs)
@@ -112,7 +121,7 @@ def rank_templates(features,requested=None):
 
 def source_design(p):
  cols=int(clamp(p.get('columns',1),1,3));width,height=p.get('page_mm',[210,297]);width=clamp(width,140,420);height=clamp(height,140,420)
- return {'id':'source-adapted','family':'source','columns':cols,'font':p.get('font','serif'),'body_pt':clamp(p.get('body_pt',11),9.5 if cols<3 else 9,14),'line_height':clamp(p.get('line_height',1.7),1.45,1.95),'margin_x_mm':clamp(p.get('margin_x_mm',18),10,30),'margin_y_mm':clamp(p.get('margin_y_mm',18),14,28),'accent':p.get('accent','#304659'),'page_mm':[width,height],'heading_ratio':p.get('heading_ratio',1.7),'heading_rule':p.get('heading_rule',False),'structural_signature':'source:'+str(cols)+':'+str(round(width/height,2))}
+ return {'id':'source-adapted','family':'source','columns':cols,'font':p.get('font','serif'),'body_pt':clamp(p.get('body_pt',11),9.5 if cols<3 else 9,14),'line_height':clamp(p.get('line_height',1.7),1.45,1.95),'margin_x_mm':clamp(p.get('margin_x_mm',18),10,30),'margin_y_mm':clamp(p.get('margin_y_mm',18),14,28),'accent':readable_accent(p.get('accent','#304659')),'page_mm':[width,height],'heading_ratio':p.get('heading_ratio',1.7),'heading_rule':p.get('heading_rule',False),'structural_signature':'source:'+str(cols)+':'+str(round(width/height,2))}
 
 def configure(a):
  r,m,c=project(a.project);conf=m.get('layout',{});conf.update({'policy':a.policy,'confidence_threshold':a.threshold,'max_template_candidates':3})

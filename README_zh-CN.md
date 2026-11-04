@@ -1,57 +1,81 @@
-# Translation Skills · 通用文档翻译与整理技能
+# Translation Skills · 文档翻译技能
 
-**忠实全译版 + 理解性译写版，一套可追溯的 HTML/PDF 工作流。**
+将文档译成两个完整版本，生成 HTML、PDF 和原文对照册。
 
-作者：**Yufeng Zhan**　协议：**MIT**　版本：**1.0.1**
+[English](README.md) · [安装说明](docs/INSTALL.md) · [操作流程](docs/WORKFLOW.md) · [支持格式](docs/SUPPORT.md) · [示例](skills/document-translation/examples/index.html)
 
-[英文 README](README.md) · [安装说明](docs/INSTALL.md) · [操作流程](docs/WORKFLOW.md) · [排版优化机制](skills/document-translation/references/visual-refinement.md) · [支持格式](docs/SUPPORT.md) · [演示入口](skills/document-translation/examples/index.html)
+Yufeng Zhan · MIT · v1.0.1
 
-本项目面向 Clouds_Coder、OpenCode、Claude Code 和 Codex。根据明确的文件路径、附件或授权目录中的候选文档，确定用户需要的材料、合编顺序、目标语言和阅读对象；随后生成两种完整译文及原文对照档案。论文、故事、合同、说明书、表格、报告和多文件集合共用同一套来源与核对规则，没有固化的学科、品牌、单位、中文模板或特定论文要素。
+Translation Skills 可用于 Codex、Claude Code、OpenCode 和 Clouds_Coder。你可以翻译一份文件，也可以按指定顺序合编多份手册、报告、文章、故事或其他材料。文件范围、目标语言和阅读对象由你决定。
 
-## 两个版本的边界
+译文由客户端当前使用的模型完成。本地脚本负责提取原文、标记段落、检查遗漏并排版，无需另配翻译 API。客户端读取文件时，仍适用该客户端自身的数据处理方式。
 
-| 产物 | 内容要求 |
+## 会得到什么
+
+| 产物 | 用途 |
 |---|---|
-| 忠实全译版 | 完整保留所选内容、事实、限定条件、语气、数字、引用与例外；译文自然，不能偷换含义 |
-| 理解性译写版 | 基于相同内容澄清指代、拆解长句、调整表达；不得当成摘要，不得添情节、改义务或加强结论 |
-| 逐句／单元对照册 | 原文、双译文、稳定编号、页码或元素位置；一句原文可对应多句译文，保持可追溯关系 |
+| 忠实全译版 | 完整翻译所选内容，保留事实、语气、限定条件、数字、注释和引用。 |
+| 理解性译写版 | 保留同样的内容和细节，面向阅读对象调整表达，例如澄清指代、拆开长句。 |
+| 原文对照册 | 并列呈现原文和两个译文，附段落编号及原文页码或元素位置，提供 HTML、PDF 和 CSV。 |
 
-图内文字、脚注、表格空值、代码标识符、公式与附录同样纳入范围。无法识别的内容保留问题记录，不用猜测补全。新增背景解释必须作为明确标注的译注，而非原作者观点。
+表格、图注、脚注和图内文字也属于翻译范围。无法辨认的内容，以及保留原文的图内标注，会列出具体位置；额外解释会单独标为译注。
 
-## 安装与使用
+## 开始使用
+
+需要 Python 3.10 或更新版本。PDF 输出和图形核对使用本地 Chromium 浏览器。扫描件识别可选用 Tesseract 或 macOS Vision。
 
 ```bash
+git clone https://github.com/FonaTech/Translation_Skills.git
+cd Translation_Skills
+python3 -m venv .venv
+source .venv/bin/activate
 python3 -m pip install -r requirements-core.txt
 python3 -m playwright install chromium
-python3 tools/install.py --targets codex claude opencode --project /path/to/project
-python3 tools/install.py --targets codex claude opencode --project /path/to/project --apply
-python3 tools/install.py --targets clouds --clouds-root /path/to/skills --apply
 ```
 
-首次命令只显示安装位置；带 `--apply` 才复制，已有目录会备份。Clouds_Coder 指定其真实技能根目录。生成文档存放在技能目录之外，不污染安装包，也不改客户端全局指令或权限。
+上面的环境激活命令适用于 macOS/Linux。Windows PowerShell 使用 `.venv\Scripts\Activate.ps1`。
 
-向客户端直接提出需求即可，例如：
+以 Codex 项目为例，先查看安装位置，再执行复制：
 
-> 使用 document-translation。把指定文件夹中的用户手册及勘误合编成法语，生成忠实全译版、面向初次使用者的理解性译写版、逐句对照 HTML/PDF。保留警告级别、操作先后、参数、表格和图示；有歧义的版本先列候选，不能擅自替换。
+```bash
+python3 tools/install.py --targets codex --project /path/to/project
+python3 tools/install.py --targets codex --project /path/to/project --apply
+```
 
-翻译由调用技能的模型完成。脚本负责取文、编号、任务交换、检查、排版和归档，**脚本本身不包含翻译模型，也不会无提示上传文件**。CLI 详细步骤见 [WORKFLOW](docs/WORKFLOW.md)。
+其他客户端的命令见[安装说明](docs/INSTALL.md)。替换已有技能目录前，安装器会创建备份。运行辅助脚本时，客户端需要能使用装好依赖的 Python 环境。
 
-## 布局与核对
+安装后，可以直接提出需求：
 
-- 首轮依据输入文档的实际页面、阅读顺序、栏数、层级、图表比例及留白设计，不把某一篇的模板强套到其他文件。
-- 输出页标明所对应的原文页。模型需要亲自查看原页和实际渲染页，逐页检查字体、图表、图注、表格、标题、页脚和疏密；记录问题后提交呈现补丁，重新渲染并复查。
-- 图像与图注作为一体处理，表题与表格相连，长表续页重复表头，列宽和图像尺寸实际测量。只有源版式严重且无法调整时，才按匹配度尝试24种版式预设。
-- 提取、双版本译文及所有输出 PDF 页都有绑定当前快照与图像哈希的覆盖清单。检查工具不能代替模型实际查看，布局分数也不是审美判断。
-- 几何、数字、覆盖与哈希检查只辅助核对；不能把脚本通过或 OCR 高置信度称为翻译正确证明。
+> 使用 document-translation，把 /path/to/manual.pdf 翻译成日语，供初次使用者阅读。生成忠实全译版、理解性译写版和原文对照册，提供 HTML 和 PDF。保留警告、表格和图内标注，并列出无法辨认的内容。
 
-## 内置资料与验证范围
+翻译项目会保存在技能目录之外。需要按命令操作时，参见[完整流程](docs/WORKFLOW.md)。
 
-包内包含跨领域案例、不同版式 demo、提取与 OCR 脚本、24种回退版式、可复用的页面核对工作流，以及内置 HTML 编辑器。格式能力、转换路径和边界见 [支持格式说明](docs/SUPPORT.md)。
+## 排版与编辑
 
-运行单元及格式回归：`python3 -m unittest discover -s tests -v`。真实语义压力测试要求调用模型逐项翻译并核对，不能用源文回填冒充；四个宿主平台目前提供安装和资源契约，不代表完成了所有客户端的交互式端到端测试。可复现实测步骤见 [REPRODUCIBILITY](docs/REPRODUCIBILITY.md)。
+初稿参考原文的页面比例、标题层级、栏数和图文关系。译文长度变化后会重新分页，模型需要对照原页与输出页，调整布局并复查。
 
-## 发布
+生成的 HTML 带有阅读工具栏和布局编辑器入口。编辑器可离线修改文字、页面设置、图片和表格。使用入口时，请将 `document-layout-editor.html` 与译文 HTML 放在同一目录。阅读工具栏和编辑器均提供 16 种界面语言，切换界面语言不会改动文档正文。
 
-已准备 README、MIT 协议、贡献说明、变更记录、GitHub Actions、Claude 插件元数据、校验清单和打包工具。[GitHub 上传步骤](docs/UPLOAD_zh-CN.md)供上传到 FonaTech 使用；本项目不会自动创建仓库或发布。
+编辑器支持导入 HTML 和 DOCX，导出 HTML、浏览器打印 PDF、DOCX、ODT、Markdown、RTF、TXT 及可继续编辑的项目 JSON。复杂 Word 格式和原页精确重建存在限制，详见[格式说明](docs/SUPPORT.md)。
 
-本仓库原创代码、方法和自有案例采用 MIT；第三方 PDF、译文片段及字体的权利独立，未将用户原始材料纳入公开包。
+## 查看示例
+
+下载或克隆仓库后，在浏览器中打开[示例展示页](skills/document-translation/examples/index.html)。GitHub 会显示 HTML 源码，页面不会直接运行；各示例的 PDF 可以在 GitHub 中预览。
+
+示例包含中文、日语、阿拉伯语、西班牙语和法语，以及扫描文字重建、图内标注和公开 PDF 选段。示例用于展示输出形式，不能据此推断所有语言和文档的翻译质量。
+
+## 参与开发
+
+技能入口位于 [`skills/document-translation`](skills/document-translation/SKILL.md)。其中，`references/` 存放翻译和复核方法，`scripts/` 存放本地处理脚本；仓库根目录下的 `tools/` 用于安装、检查和打包。
+
+```bash
+python3 tools/validate.py
+python3 -m unittest discover -s tests -v
+python3 tools/checksums.py
+```
+
+更多内容见[复现检查](docs/REPRODUCIBILITY.md)、[架构说明](docs/ARCHITECTURE.md)和[贡献指南](CONTRIBUTING.md)。自动检查能发现结构、覆盖和部分格式问题；译文含义与实际渲染页面仍需直接核对。
+
+## 许可证
+
+原创代码、技能说明和作者自有示例采用 [MIT](LICENSE) 协议。输入文档、第三方选段和依赖项保留各自许可，见[第三方材料说明](THIRD_PARTY_NOTICES.md)。

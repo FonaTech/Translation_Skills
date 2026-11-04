@@ -29,6 +29,10 @@ class WorkflowTests(unittest.TestCase):
   for packet in [[i,i],[i,dict(i,id='unknown')]]:
    with self.assertRaises(ValueError):self.apply(packet)
    self.assertEqual(before,(r/'content.json').read_bytes())
+ def test_reapplying_note_is_idempotent(self):
+  r,m,c,b=self.seed();uid=b['units'][0]['id'];item={'id':uid,'faithful':'不得超过 12.5 V。','interpretive':'电压不得高于 12.5 V。','note':'Source wording retained.'}
+  self.apply([item]);self.apply([item]);_,_,c=t.project(r)
+  self.assertEqual(len(c['blocks'][0]['units'][0]['notes']),1)
  def test_source_freshness_and_translation_independence(self):
   r,m,c,b=self.seed();old=t.source_snap(m,c);c['blocks'][0]['units'][0]['translations']={'ar':{'faithful':'أ','interpretive':'ب'}}
   self.assertEqual(old,t.source_snap(m,c));c['blocks'][0]['units'][0]['source']='Different source';t.write(r/'content.json',c)
@@ -52,6 +56,20 @@ class WorkflowTests(unittest.TestCase):
   second=t.add_block(c,'D001','image',{'page':1},[],asset='assets/g.png');second['caption_block_ids']=[caption['id']];img['caption_block_ids']=[caption['id']];self.assertIn('duplicate-caption-binding',[x['code'] for x in refinement.validate_blocks(c)])
  def test_success_does_not_imply_review(self):
   r,m,c,b=self.seed();self.apply([{'id':b['units'][0]['id'],'faithful':'不得超过 12.5 V。','interpretive':'应将电压控制在 12.5 V 以内。'}]);self.assertFalse((r/'reports/reviews.json').exists())
+ def test_task_context_includes_already_translated_heading(self):
+  r,m,c,b=self.seed('Section heading');b['type']='heading';b['units'][0]['translations']={'zh-Hans':{'faithful':'节标题','interpretive':'节标题'}}
+  following=t.add_block(c,'D001','paragraph',{'page':2},['Do not exceed 12.5 V.']);t.write(r/'content.json',c)
+  with contextlib.redirect_stdout(io.StringIO()):t.tasks(argparse.Namespace(project=str(r),language='zh-Hans',size=6,all=False,max_chars=1000,context_chars=100))
+  packet=t.read(r/'tasks/zh-Hans-0001.json');self.assertEqual(len(packet['items']),1);item=packet['items'][0]
+  self.assertEqual(item['context']['preceding_heading'],'Section heading');self.assertEqual(item['context']['neighbors_for_context_only']['previous']['id'],b['units'][0]['id']);self.assertIn('12.5',item['source_checks']['numbers'])
+ def test_task_character_budget_never_truncates_long_unit(self):
+  import agent_packets
+  items=[{'id':str(i),'source':text,'locator':{'document_id':doc}} for i,(doc,text) in enumerate([('D1','x'*10),('D1','y'*90),('D1','z'*250),('D2','w'*20)])]
+  batches=list(agent_packets.batches(items,6,100));self.assertEqual([len(x) for x in batches],[2,1,1]);self.assertEqual(''.join(i['source'] for batch in batches for i in batch),''.join(i['source'] for i in items))
+ def test_task_resume_index_excludes_completed_units(self):
+  r,m,c,b=self.seed();self.apply([{'id':b['units'][0]['id'],'faithful':'不得超过 12.5 V。','interpretive':'电压应控制在 12.5 V 以内。'}])
+  with contextlib.redirect_stdout(io.StringIO()):t.tasks(argparse.Namespace(project=str(r),language='zh-Hans',size=6,all=False))
+  index=t.read(r/'tasks/zh-Hans-index.json');self.assertEqual(index['pending_units'],0);self.assertEqual(index['task_files'],[])
  def test_zero_na_and_blank_distinct(self):
   r,m,c,b=self.seed('0 / N/A');u=b['units'][0];u['translations']={'zh-Hans':{'faithful':'0 / N/A','interpretive':'0 / N/A'},'ar':{'faithful':'0 / N/A','interpretive':'0 / N/A'}}
   self.assertFalse(t.audit_data(r,m,c)['errors']);self.assertEqual(u['source'],'0 / N/A')

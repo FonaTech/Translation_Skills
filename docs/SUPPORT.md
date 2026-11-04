@@ -1,31 +1,70 @@
-# Supported routes and practical limits
+# Formats and limits
 
-| Input | Bundled route | Mandatory inspection |
+[Installation](INSTALL.md) · [Workflow](WORKFLOW.md)
+
+The CLI extracts source material into a common content model. The model in the client translates it, and the publishing helpers create reading editions. Extraction support and exact reproduction of the original file are different capabilities.
+
+## Input formats
+
+| Input | Extraction route | What to inspect |
 |---|---|---|
-| Native PDF | text blocks, page previews, image crops; one/two/auto column order; optional tables | ordering, tables, vector diagrams, math, hidden text, image placement |
-| Scanned PDF / raster | preview + local Tesseract or macOS Vision OCR candidates | every OCR passage, names/numbers, duplicated source images, unreadable regions |
-| DOCX | OOXML body paragraphs, tables, media, notes, headers/footers | numbering, fields, text boxes, equations, media anchors, merged cells |
-| Static HTML | safe visible-structure text parser; scripts ignored | images, tables and interactive/hidden content; complex tables are provisional flattened text |
-| Markdown / UTF-8 text | paragraphs / heading hints | code fences, lists and structure not fully parsed; agent repairs IR |
-| CSV / TSV | cell-position table IR | delimiter, header choice, blank cells, ragged rows, units |
-| PPTX | slide/shape text, tables, notes and common raster media in presentation order | grouped shapes, charts, SmartArt, animation and exact slide geometry |
-| XLSX | worksheets and bounded cell tables; formulas remain protected source text and are never evaluated | styles/date serials, merged ranges, comments, charts, drawings, print areas; output is a reading edition, not a live workbook |
-| ODT / ODS / ODP | native document structure, paragraphs, tables and common raster media | merged/repeated cells, formulas, footnotes, lists, embedded objects and anchors |
-| EPUB | spine-order XHTML text; scripts are not run | navigation, out-of-spine files, images/SVG, notes and exact pagination |
-| RTF / legacy DOC / XLS / PPT | local textutil or LibreOffice conversion, with source and intermediate hashes | conversion fidelity and unrepresented objects; host converter is required and no rename-as-conversion is used |
+| Native PDF | Text blocks, page previews and image crops; optional tables | Column order, hidden text, formulas, tables and vector figures |
+| Scanned PDF or raster image | Page previews and local Tesseract/macOS Vision OCR | Every recognized passage, names, quantities and unreadable regions |
+| DOCX | OOXML paragraphs, tables, media, notes, headers and footers | Numbering, fields, text boxes, equations, anchors and merged cells |
+| Static HTML | Visible text and structure; source scripts are ignored | Images, hidden content and tables; complex tables may be flattened |
+| Markdown or UTF-8 text | Paragraphs and heading hints | Code fences, lists and other structure needing repair |
+| CSV or TSV | Cell-position tables | Delimiter, headers, blank cells, uneven rows and units |
+| PPTX | Slide and shape text, tables, notes and common raster media | Groups, charts, SmartArt, slide order and geometry |
+| XLSX | Worksheets and bounded cell tables; formulas retained as source text | Date serials, merged cells, comments, charts and print areas |
+| ODT, ODS or ODP | Document structure, paragraphs, tables and common raster media | Repeated/merged cells, formulas, notes and embedded objects |
+| EPUB | XHTML text in spine order | Navigation, images, SVG, notes and omitted out-of-spine files |
+| RTF or legacy DOC/XLS/PPT | Local textutil or LibreOffice conversion | Objects or formatting lost during conversion; a host converter is required |
 
-The standalone editor imports HTML and DOCX; it exports HTML, browser-print PDF, DOCX, ODT, Markdown, RTF, TXT and an editable project JSON. Every built translation HTML has an “open in layout editor” command that transfers the current HTML into the sibling editor copy. Keep `document-layout-editor.html` in the same folder as the translation HTML for this handoff. The editor sanitizes imported content, retains recognized source CSS/layout metadata, and supports direct text editing, common paragraph formatting, page size/margins/columns, image sizing, table row/column edits, measured pagination, bounded geometry-based layout suggestions and fallback preset ranking. Its offline optimizer uses deterministic DOM geometry rules; it does not include an ML model or provide semantic translation review.
+Spreadsheet formulas are never evaluated. PowerPoint and spreadsheet inputs produce reading editions. They do not become a reconstructed slide deck or a recalculated workbook.
 
-This is a focused document-layout editor, not a full Word/Pages replacement. It does not provide complete tracked changes, comments/review workflows, arbitrary floating-object placement, equation editing, fidelity for every CSS construct, or a full desktop-publishing engine. DOCX export covers common paragraphs, basic formatting, tables and raster images; complex CSS, equations, footnotes, revisions, charts, nested tables and floating objects can simplify. PDF is produced through browser print. These exports are reading/editing artifacts. It does not export a recalculated XLSX workbook or a reconstructed PPTX slide deck.
+Encrypted PDFs need an authorized password. OCR engines, converters and their language packs are installed separately. Conversion records include source and intermediate hashes.
 
-No silent recovery from encrypted PDFs, missing OCR, missing glyphs or oversized objects. A readable reflowed translation is the default output; exact original-PDF replacement needs a separate geometry/redaction workflow and is not promised here. PDF output is static, not a fillable or legally usable replacement form. Source forms, signatures, seals and completed values must not be guessed.
+## Generated documents
 
-The CLI does not guarantee arbitrary language fluency. Target language tags and RTL directions are configurable; actual glyph coverage, morphology, shaping, hyphenation and segmentation depend on fonts/browser/translator. Tested demos cover five languages, not every script. Unknown UI labels fall back to English; translating those labels is a presentation enhancement, not source-content translation.
+The workflow produces faithful and interpretive HTML/PDF editions, plus a source comparison in HTML/PDF/CSV. HTML embeds its styles and assets. PDF uses browser pagination. A copy of `document-layout-editor.html` sits beside the HTML files for editing.
 
-Two-column flow is measured in the browser and balanced at source-page boundaries and around figures and tables. Wide objects span the page only when their source role or explicit presentation patch requires it. This is not a full desktop-publishing engine; inspect mixed column, RTL, broad table and floated-object layouts. Portrait A4/Letter are implemented. Extra-wide tables may require an explicitly designed landscape appendix or a column split with preserved keys.
+The layout begins with the source's proportions and hierarchy, then reflows the translated text. It can preserve source-page references without matching the original page count. A4 and Letter are available through the CLI; source-derived layouts can use source page dimensions. Wide tables, mixed columns, rotated content and large figures need inspection and may require restructuring.
 
-The invoking model must visually compare original and rendered pages, record observed defects, apply a presentation-only patch and reopen the adjusted PDF pages. Automated measurements check text coverage, page bounds, empty pages and image placement, but cannot judge whether a layout is attractive or faithful to its source. See `skills/document-translation/references/visual-refinement.md`.
+The PDF output is static. A translated form does not retain interactive fields, signature validity or the authority of the original form. Exact replacement of text inside an original PDF requires a separate geometry and overlay workflow.
 
-Sentence splitting is conservative and provisional: abbreviations/decimals, poems and table cells need contextual review. A unit may span several source sentences if splitting would destroy meaning. Alignment preserves source-to-target mapping, not a claim of universal grammatical 1:1 correspondence.
+## Offline layout editor
 
-Author-owned cases are illustrative, not advice in law, taxation or medicine. Actual consequential translations retain source constraints; domain review can be requested separately. Source errors are disclosed, not silently corrected. No OCR confidence, back-translation score, number parity or successful release command proves semantic accuracy.
+| Operation | Formats |
+|---|---|
+| Import | HTML, DOCX |
+| Export | HTML, browser-print PDF, DOCX, ODT, Markdown, RTF, TXT, editable project JSON |
+
+The editor supports direct text editing, common paragraph formatting, page dimensions, margins, columns, image sizing and table row/column edits. Imported content is sanitized. Recognized layout styles and metadata are retained where supported.
+
+Tracked changes, comments, equation editing and arbitrary floating-object placement are outside its scope. DOCX export handles common paragraphs, formatting, tables, raster images and supported static SVG with a PNG fallback. Equations, footnotes, revisions, charts, nested tables and complex CSS can be simplified. Inspect exports in the application that will be used to read them.
+
+Automatic layout suggestions compare measured candidates with an embedded ranker. Manual control locks and independent content/geometry checks constrain those suggestions. Training used synthetic documents and engineering preferences. See the [model card](../skills/document-translation/assets/models/MODEL_CARD.md) for the data, evaluation and limits.
+
+## Languages and fonts
+
+Target-language tags and text direction are configurable. Translation fluency comes from the client model. Glyph coverage, shaping, segmentation and line breaks also depend on the installed fonts and browser. Inspect actual CJK, Arabic, Hebrew, Thai and Indic output where applicable.
+
+The reader and editor offer 16 interface languages: English, Simplified Chinese, Traditional Chinese, Japanese, Spanish, Arabic, German, French, Portuguese, Italian, Russian, Korean, Hindi, Indonesian, Vietnamese and Turkish. Browser language preferences determine the initial selection, with English as fallback. A saved manual choice takes precedence. Interface changes preserve the document's text, language, direction and print layout.
+
+The included document examples cover five target languages. Locale regression scripts exercise Chromium desktop/mobile emulation; they do not establish compatibility with every browser or operating system.
+
+## Figures and source comparison
+
+Supported PDF vector paths can be retained as SVG with a source-rendered PNG fallback. Build and render compare retained-original PDF figures with source crops and record the results in `reports/asset-fidelity.json`. The workflow can use a source-rendered RGB crop when SVG appearance differs. See [vector figures](../skills/document-translation/references/vector-figures.md).
+
+Outlined text remains part of the graphic. Translated captions or label maps do not replace those labels in place. Record retained-label exceptions, and inspect panels, axes, legends, units and transparency in the final export.
+
+Alignment uses stable IDs and source locations. One original sentence may correspond to several translated sentences. Abbreviations, poems and table cells need contextual checking of the provisional sentence boundaries.
+
+## Review and release
+
+Extraction review covers the selected source content. Semantic review compares every unit with both editions. Visual review compares source previews with all delivered PDF pages. The release command checks coverage, unresolved issues and evidence freshness.
+
+The current `review_evidence.py --kind visual` helper gathers source images from PDF previews. A project with no PDF source previews cannot complete this helper's visual checklist. For mixed-source projects, the generated checklist also needs additional native-source visual evidence. Extraction support for a format should not be read as a claim that its full release path has been verified.
+
+Automated bounds, number, hash and image checks help locate problems. They cannot establish translation accuracy or prove that someone inspected a page. Unreadable text stays unresolved. Domain examples are fictional translation exercises; consequential documents may also need a qualified domain reviewer.

@@ -1,0 +1,20 @@
+/* Original offline interface localization. MIT (c) 2026 Yufeng Zhan. */
+const I18n=(()=>{
+ const catalogs=EDITOR_LOCALES,locales=Object.keys(catalogs),storageKey='document-studio-ui-language-v101',listeners=[];
+ let locale='en',preference='auto',initialized=false;
+ function match(tag){tag=String(tag||'').replace(/_/g,'-').trim().toLowerCase();if(!/^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/.test(tag))return null;if(/^zh(?:-|$)/.test(tag)){if(/-hans(?:-|$)/.test(tag))return 'zh-Hans';if(/-hant(?:-|$)|-(?:tw|hk|mo)(?:-|$)/.test(tag))return 'zh-Hant';return 'zh-Hans';}const base=tag.split('-')[0];return locales.includes(base)?base:null;}
+ function detect(preferences){if(preferences===undefined){try{preferences=Array.from(navigator.languages||[]);if(!preferences.length&&navigator.language)preferences=[navigator.language];}catch{preferences=[];}}if(typeof preferences==='string')preferences=[preferences];for(const tag of preferences||[]){const found=match(tag);if(found)return found;}return 'en';}
+ function t(key,params={}){const value=catalogs[locale]?.[key]??catalogs.en[key]??key;return value.replace(/\{([a-zA-Z]+)\}/g,(_,name)=>String(params[name]??'{'+name+'}'));}
+ function bind(el,key,params={}){if(!el)return;el.dataset.i18n=key;el.dataset.i18nParams=JSON.stringify(params);el.textContent=t(key,params);}
+ function render(root=document){for(const el of root.querySelectorAll('[data-i18n]')){let params={};try{params=JSON.parse(el.dataset.i18nParams||'{}');}catch{}el.textContent=t(el.dataset.i18n,params);}for(const attr of ['title','aria-label','placeholder'])for(const el of root.querySelectorAll('[data-i18n-'+attr+']'))el.setAttribute(attr,t(el.getAttribute('data-i18n-'+attr)));}
+ function apply(emit=true){locale=preference==='auto'?detect():preference;document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr';render();const sel=document.getElementById('uiLanguage');if(sel)sel.value=preference;if(emit)for(const fn of listeners)fn();window.dispatchEvent(new CustomEvent('document-studio-languagechange',{detail:{locale,preference}}));return locale;}
+ function select(value){preference=value==='auto'||locales.includes(value)?value:'auto';try{localStorage.setItem(storageKey,preference);}catch{}return apply();}
+ function init(){if(initialized)return;initialized=true;try{const saved=localStorage.getItem(storageKey);if(saved==='auto'||locales.includes(saved))preference=saved;}catch{}apply(false);window.addEventListener('languagechange',()=>{if(preference==='auto')apply();});}
+ const errorKeys=EDITOR_ERROR_KEYS,diagnostics={'Image failed to decode':'diag.image','Pagination exceeded 1000 pages; stopped to protect the browser':'diag.limit','Full-width block is too tall':'diag.full','Block exceeds the available column height':'diag.column','A character exceeds the content area':'diag.character','Table row exceeds the content area; split it manually':'diag.row','Table header exceeds the content area':'diag.header'};
+ function diagnostic(message){message=String(message);if(errorKeys[message])return t(errorKeys[message]);for(const [source,key] of Object.entries(diagnostics))if(message.startsWith(source))return t(key)+message.slice(source.length);return message;}
+ function keyFor(message){return Object.keys(catalogs[locale]).find(k=>catalogs[locale][k]===message)||errorKeys[message]||null;}
+ function localize(message){message=String(message);return errorKeys[message]?t(errorKeys[message]):diagnostic(message);}
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function help(license){return ['start','layout','formats','privacy','license'].map(k=>'<h3>'+esc(t('help.'+k+'Title'))+'</h3><p>'+esc(t('help.'+k))+'</p>').join('')+'<h3>MIT License / Disclaimer</h3><pre lang="en" dir="ltr">'+esc(license)+'</pre>';}
+ return {t,bind,render,select,init,detect,match,onChange:fn=>listeners.push(fn),localize,keyFor,diagnostic,help,get locale(){return locale;},get preference(){return preference;},locales};
+})();

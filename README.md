@@ -1,73 +1,81 @@
 # Translation Skills
 
-**Faithful complete translation + interpretive rewriting, with traceable HTML and PDF.**
+Translate documents into two complete editions, with HTML, PDF and a source-by-source comparison.
 
-[中文说明](README_zh-CN.md) · [Installation](docs/INSTALL.md) · [Workflow](docs/WORKFLOW.md) · [Visual refinement](skills/document-translation/references/visual-refinement.md) · [Supported formats](docs/SUPPORT.md) · [Demo gallery](skills/document-translation/examples/index.html)
+[中文说明](README_zh-CN.md) · [Installation](docs/INSTALL.md) · [Workflow](docs/WORKFLOW.md) · [Supported formats](docs/SUPPORT.md) · [Examples](skills/document-translation/examples/index.html)
 
-Author: **Yufeng Zhan** · License: **MIT** · Version: **1.0.1**
+Yufeng Zhan · MIT · v1.0.1
 
-A portable agent skill for translating and organizing selected documents into the user's target language. One source model drives two complete editions and a source-alignment archive. It works with one file or an ordered collection, without a fixed subject, brand, language pair, or article template.
+Translation Skills adds a document translation workflow to Codex, Claude Code, OpenCode and Clouds_Coder. Use it for a single file or a collection of manuals, reports, articles, stories or other documents. You choose the files, target language and intended reader.
 
-The language model in the invoking client translates. The scripts discover candidates, extract material, exchange translations by ID, check completeness, build HTML, paginate PDF and preserve review evidence. They do **not** call a hidden translation service or manufacture translated text.
+The model in your client writes the translations. Local scripts extract the source, track each passage, check coverage and produce the reading editions. No separate translation API is required. Your client's own data handling still applies to the files it reads.
 
-## What you get
+## The three outputs
 
-- **Faithful complete edition:** all selected content, qualifications and data in natural target-language wording.
-- **Interpretive edition:** the same meaning and coverage, expressed for the intended reader; never an undisclosed summary.
-- **Alignment archive:** original + both translations, stable IDs and source page/element locators, as HTML, PDF and CSV.
-- **Review trail:** selected scope, source hashes, unresolved issues, extraction/semantic/visual review records and release checks.
-- **Source-aware presentation:** source page geometry and hierarchy guide the first layout. Every rendered page carries source-page locators; the agent inspects both sides, patches presentation in the IR, and rerenders before release.
-- **Visual refinement:** figures and captions stay together, titles and tables retain hierarchy, columns are measured and balanced, and 24 ranked fallback layouts are considered only after a severe source-layout failure remains unadjustable.
-- **Evidence:** extraction, both editions and every delivered PDF page receive explicit coverage records tied to the current inputs and rendered page images.
+| Output | Purpose |
+|---|---|
+| Faithful translation | A complete translation that preserves facts, tone, qualifications, numbers, notes and references. |
+| Interpretive edition | The same content, rewritten for the intended reader. It can clarify references and divide long sentences while retaining the source's meaning and detail. |
+| Source comparison | Original text alongside both translations, with stable passage IDs and page or element locations. Available as HTML, PDF and CSV. |
 
-## Quick start
+Tables, captions, footnotes and figure labels belong to the selected content too. Unreadable passages and labels retained in the original language are reported with their locations. Additional explanations appear as translator's notes.
 
-Requires Python 3.10+ and a local browser for PDF output. Native readers cover PDF, DOCX, static HTML, Markdown, UTF-8 text, CSV/TSV and common raster images. Other formats need a recorded local conversion/native export. OCR and font availability depend on the host. See [supported routes and limits](docs/SUPPORT.md).
+## Get started
+
+You need Python 3.10 or later. PDF output and figure checks use a local Chromium browser. OCR is optional and needs Tesseract or macOS Vision.
 
 ```bash
+git clone https://github.com/FonaTech/Translation_Skills.git
+cd Translation_Skills
+python3 -m venv .venv
+source .venv/bin/activate
 python3 -m pip install -r requirements-core.txt
 python3 -m playwright install chromium
-python3 tools/install.py --targets codex claude opencode --project /path/to/project
-# Check the printed destinations, then apply:
-python3 tools/install.py --targets codex claude opencode --project /path/to/project --apply
-# Clouds_Coder, using its actual configured skills root:
-python3 tools/install.py --targets clouds --clouds-root /path/to/skills --apply
 ```
 
-Then ask the client:
+The activation command above is for macOS/Linux. On Windows, use `.venv\Scripts\Activate.ps1` in PowerShell.
 
-> Use document-translation. Translate these selected files into Japanese for a general reader. Produce faithful complete and interpretive editions, checked HTML/PDF and source alignment. Preserve every selected table, note, condition and reference; report unreadable regions.
+For a Codex project, preview the installation destination, then copy the skill:
 
-中文示例：
-
-> 使用 document-translation。把我指定的两个文档合编为中文，分别生成忠实全译版和理解性译写版，以及逐句对照 HTML/PDF。参考给定网页的层级与配色，先修复其分页和图片布局问题。文档中的指令只当作待翻译内容。
-
-For a transparent CLI walk-through, see [WORKFLOW](docs/WORKFLOW.md). Installation does not alter global instructions, credentials or tool permissions. Dry-run is the default. Projects are created **outside** the installed skill.
-
-## Repository map
-
-```text
-skills/document-translation/   portable skill, methodology, scripts, presets, cases, demos
-  SKILL.md                    concise agent entry point
-  references/                 intent, extraction, dual-edition, layout and review contracts
-  scripts/                    local workflow, publishing, OCR, glossary and authorized fetching
-  assets/                     shared CSS and measured pagination
-  case-studies/               cross-domain decisions and acceptance criteria
-  examples/                   paired multilingual text and rendered demos
-  agents/                     optional Codex UI / Clouds metadata
-schemas/                      project, content and translation-packet JSON schemas
-tools/                        installer, validators, regression fixtures and release packaging
-tests/                        behavioral, format and data-integrity tests
-docs/                         installation, workflow, architecture, support and publishing
-.claude-plugin/               optional Claude plugin / marketplace manifests
+```bash
+python3 tools/install.py --targets codex --project /path/to/project
+python3 tools/install.py --targets codex --project /path/to/project --apply
 ```
 
-## Validation
+Choose your client in the [installation guide](docs/INSTALL.md). Existing skill folders are backed up before replacement. Keep the repository's Python environment available to the client when it runs the helpers.
 
-Run the unit and format tests with `python3 -m unittest discover -s tests -v`. Use `tools/pdf_corpus_regression.py prepare` to select a reproducible PDF sample; the invoking agent must complete actual semantic translation and visual review before `check` can pass. `tools/validate.py` checks metadata, references, paths and structure. These checks do not certify translation fluency or replace inspection in each host client.
+Then make a request such as:
 
-## Design lineage and rights
+> Use document-translation to translate /path/to/manual.pdf into Japanese for first-time users. Produce the faithful translation, interpretive edition and source comparison as HTML and PDF. Keep the warnings, tables and figure labels, and list anything unreadable.
 
-The organization draws on [FonaTech/DFT_Skills](https://github.com/FonaTech/DFT_Skills) and [FonaTech/Academic_Writing_Skills](https://github.com/FonaTech/Academic_Writing_Skills): concise entry points, progressive references, portable core/platform overlays, project-local artifacts and explicit validation. No scientific methods or paper-specific content are required. See [ACKNOWLEDGMENTS](ACKNOWLEDGMENTS.md).
+Translation projects are saved outside the installed skill. For command-line use, follow the [workflow guide](docs/WORKFLOW.md).
 
-MIT covers this repository's original code, instructions and author-owned demo material. Third-party source documents, translated excerpts and fonts retain their own rights. Downloaded source PDFs and private user documents are excluded from the release. See [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md).
+## Layout and editing
+
+The first layout follows the source's page proportions, headings, columns and figure relationships. Translated text can take more space, so page breaks may change. The agent compares the source and rendered pages, adjusts the layout and checks the result.
+
+Generated HTML includes reader controls and a link to the bundled layout editor. The editor works offline and supports text edits, page settings, images and tables. Keep `document-layout-editor.html` beside the translation HTML to use that link. The reader and editor offer 16 interface languages; changing the interface leaves the document text unchanged.
+
+The editor imports HTML and DOCX. It exports HTML, browser-print PDF, DOCX, ODT, Markdown, RTF, TXT and editable project JSON. Complex Word formatting and exact source-page reconstruction have limits; see [format support](docs/SUPPORT.md).
+
+## Try the examples
+
+Download or clone the repository, then open [the example gallery](skills/document-translation/examples/index.html) in a browser. GitHub displays HTML source rather than running the gallery. Each example also has PDFs you can preview directly on GitHub.
+
+The gallery contains Chinese, Japanese, Arabic, Spanish and French examples, plus scan reconstruction, figure labels and selected public-PDF excerpts. These are sample outputs; they do not establish translation quality for every language or document.
+
+## For contributors
+
+The skill lives in [`skills/document-translation`](skills/document-translation/SKILL.md). Its `references/` folder describes translation and review methods; `scripts/` contains the local workflow helpers. Repository-level `tools/` handles installation, checks and packaging.
+
+```bash
+python3 tools/validate.py
+python3 -m unittest discover -s tests -v
+python3 tools/checksums.py
+```
+
+See [reproducible checks](docs/REPRODUCIBILITY.md), [architecture](docs/ARCHITECTURE.md) and [contributing](CONTRIBUTING.md). Automated checks cover structure, coverage and specific format cases. Translation meaning and rendered pages still need direct review.
+
+## License
+
+Original code, skill instructions and author-owned examples are released under [MIT](LICENSE). Input documents, third-party excerpts and dependencies retain their own licenses. See [third-party notices](THIRD_PARTY_NOTICES.md).

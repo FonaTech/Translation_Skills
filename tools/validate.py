@@ -33,7 +33,7 @@ def validate():
  for base in ['.claude-plugin','claude-plugin']:
   assert json.loads((R/base/'plugin.json').read_text())['version']==version
   assert json.loads((R/base/'marketplace.json').read_text())['plugins'][0]['version']==version
- for rel in ['README.md','README_zh-CN.md','CHANGELOG.md','docs/UPLOAD_zh-CN.md','skills/document-translation/examples/index.html']:
+ for rel in ['README.md','README_zh-CN.md','CHANGELOG.md','skills/document-translation/examples/index.html']:
   if version not in (R/rel).read_text():errors.append(f'Missing current version metadata: {rel}')
  checks.append('release version consistency')
  for p in R.rglob('*'):

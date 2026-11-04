@@ -1,30 +1,83 @@
-# Reproduce checks
+# Reproducing the checks
 
-Run from repository root. Work and downloaded sources belong outside the installed skill.
+Run commands from the repository root. Put test projects, downloaded sources and screenshots outside the installed skill. Use a fresh output directory for each run.
+
+## Structure and unit tests
+
+With the core dependencies installed:
 
 ```bash
 python3 tools/validate.py
 python3 -m unittest discover -s tests -v
-python3 tools/format_regression.py --output-root /path/to/work/formats
-python3 tools/make_demos.py --output-root /path/to/work/demos
-python3 skills/document-translation/scripts/translate.py render /path/to/work/demos/demo-ar
-python3 tools/integration.py --output-root /path/to/work/integration
-python3 tools/pdf_corpus_regression.py prepare --pdf-root /path/to/pdf-corpus --output-root /path/to/work/pdf-corpus-regression --seed 173 --count 8
+python3 tools/verify_platform_contract.py --output /path/to/platform-checks.json
 python3 tools/checksums.py
 ```
 
-`integration.py` additionally needs python-docx (`requirements-optional.txt`). Reusing an existing integration directory is intentionally rejected by init; choose a fresh directory or explicitly remove only your test output. If Playwright's downloaded browser is not the one installed on the host, use `TRANSLATION_BROWSER` or `--browser`. No machine-specific executable path is packaged.
+These commands check metadata, local links, Python/JSON syntax, installation copies, source IDs, packet handling and specific extraction/rendering invariants. The platform check uses isolated copies and does not start interactive client sessions.
 
-`format_regression.py` creates owned fixtures for native and conversion-backed common formats outside the package, then tests extraction and structural preservation. Legacy Office formats need local LibreOffice or macOS `textutil`.
+`tools/checksums.py` verifies the manifest. After intentional file changes, update it with `python3 tools/checksums.py --write`, then run verification again. For the current test results and their scope, see the [validation record](../skills/document-translation/references/validation-summary.md).
 
-`pdf_corpus_regression.py prepare` selects PDFs from a lexicographically sorted recursive inventory using the supplied seed, extracts page 1 and the one-based lower midpoint, and creates translation tasks. Extraction alone does not make this a completed regression. In the invoking agent loop, inspect each selected source page, correct its IR, translate every selected unit into both editions, apply real packets, compare original text against both editions, build and render, refine and inspect actual page images, and record complete extraction/semantic/visual evidence. Then run `pdf_corpus_regression.py check`; it rejects missing translations, stale reviews, and incomplete rendered outputs. Keep project, PDF, translation and screenshot results outside the distributable skill package.
+## Format and browser checks
 
-To fetch an authorized source use `scripts/fetch_pdf.py URL OUTPUT.pdf --rights "record the applicable rights"`. Curl follows checked redirects, validates HTTP(S), rejects private addresses by default, enforces time/size limits, checks the signature and opens the PDF; it writes acquisition metadata. URL checks are not a comprehensive untrusted-network sandbox. Use only trusted public endpoints. Do not disable TLS verification to force a pass.
+Install the optional test dependencies before generating Office fixtures:
 
-The invoking model performs translation directly; no external inference service is required. Do not use fixed fixture translations, source echoes or seeded strings as evidence of a semantic regression. Historical OCR remains blocked until each uncertain unit is checked against the page.
+```bash
+python3 -m pip install -r requirements-optional.txt
+python3 tools/format_regression.py --output-root /path/to/work/formats
+python3 tools/integration.py --output-root /path/to/work/integration
+```
 
-Bundled demo outputs are snapshots. Rebuilding may change page breaks, PDF bytes and metadata across fonts/browser versions. Use semantic/coverage/layout checks, then visually inspect the rebuilt pages rather than expecting identical PDF hashes.
+Format regression creates author-owned documents and tests extraction. It needs `python-docx`, `python-pptx` and `openpyxl`. Legacy Office and OpenDocument fixture generation needs LibreOffice; local RTF extraction can use macOS `textutil`. OCR uses an available local engine. Review the report to see which routes actually ran.
 
-Additional owned visual fixtures: run `python3 tools/make_visual_demos.py --output-root /path/to/work/visual --font /path/to/licensed-cjk-font.ttf`, render both projects, then compare the actual images and captions. This generator uses known transcription ground truth; it does not claim a fresh OCR run. Re-run OCR separately for OCR validation.
+Integration exercises document structure and pagination with supplied fixture translations. Those fixed translations test the publishing pipeline, not fresh translation by a model.
 
-Platform copy/metadata checks: `python3 tools/verify_platform_contract.py`; add `--clouds-source /path/to/trusted/Clouds_Coder.py` only for a trusted snapshot whose pure metadata methods you intend to execute. No full client import or interactive session is implied.
+Additional browser checks:
+
+```bash
+python3 tools/editor_i18n_regression.py --output /path/to/work/editor-locales
+python3 tools/reader_i18n_regression.py --output /path/to/work/reader-locales
+python3 tools/asset_fidelity_regression.py --output /path/to/work/figure-colors
+```
+
+These scripts need a local Chromium browser. Use `TRANSLATION_BROWSER` or their `--browser` option for an existing installation. Locale checks cover Chromium desktop/mobile emulation. The figure test uses author-owned color and vector fixtures. Read each report's failures and skipped routes before describing the result.
+
+## Rebuild the examples
+
+```bash
+python3 tools/make_demos.py --output-root /path/to/work/demos
+python3 skills/document-translation/scripts/translate.py render /path/to/work/demos/demo-ar
+```
+
+`make_demos.py` creates the five language projects from fixed example translations. It replaces matching demo directories under its output root, so use a dedicated test folder. It does not rebuild the whole gallery.
+
+For the scan and figure fixtures:
+
+```bash
+python3 tools/make_visual_demos.py --output-root /path/to/work/visual --font /path/to/licensed-cjk-font.ttf
+```
+
+This generator uses known transcription text. Run OCR separately if testing recognition. Rebuilt PDF bytes and page breaks can vary with browser and font versions; compare content, layout reports and actual page images.
+
+## Translate a PDF corpus
+
+Prepare a reproducible selection from an authorized local PDF directory:
+
+```bash
+python3 tools/pdf_corpus_regression.py prepare --pdf-root /path/to/pdfs --output-root /path/to/work/corpus --seed 173 --count 8 --scope full --language zh-Hans
+```
+
+The seed controls file selection. `--scope full` includes every source page; the default `first-middle` scope selects page 1 and the lower midpoint. Preparation creates projects and tasks with empty translation fields.
+
+Complete each project through the [translation workflow](WORKFLOW.md): inspect extraction, supply both translations through the current client model, compare meaning, render and adjust the documents, inspect every output page and record review evidence. Then run:
+
+```bash
+python3 tools/pdf_corpus_regression.py check --output-root /path/to/work/corpus
+```
+
+Missing translations, partial scope in a full run, stale reviews or missing outputs leave the regression incomplete. Keep the failed report. Successful extraction or a PDF without blank pages does not establish semantic translation quality.
+
+## Public-source fixtures
+
+The repository retains [acquisition records and excerpt scope](../skills/document-translation/references/public-test-provenance.json), not the downloaded third-party PDFs. Historical results are identified in the validation record and should not be reported as a new run.
+
+The optional `scripts/fetch_pdf.py URL OUTPUT.pdf --rights "Applicable rights"` helper records acquisition metadata and checks the response as a PDF. Use an authorized public source. Its URL checks do not replace network isolation for untrusted endpoints.

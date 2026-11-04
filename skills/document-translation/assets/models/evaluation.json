@@ -1,0 +1,140 @@
+{
+  "model": "dom-ranker-1.0.1",
+  "document_split": true,
+  "training_documents": 48,
+  "holdout_documents": 16,
+  "training_pairs": 12619,
+  "holdout_pairwise_accuracy": 0.9751890359168242,
+  "holdout_mean_regret": 0.0093444375,
+  "holdout": [
+    {
+      "document": "synthetic-002",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 262,
+      "pairwise_total": 267
+    },
+    {
+      "document": "synthetic-003",
+      "selected": "type-open",
+      "teacher_best": "type-open",
+      "regret": 0.0,
+      "pairwise_correct": 265,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-008",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 259,
+      "pairwise_total": 263
+    },
+    {
+      "document": "synthetic-011",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 264,
+      "pairwise_total": 267
+    },
+    {
+      "document": "synthetic-012",
+      "selected": "source",
+      "teacher_best": "heading-open",
+      "regret": 0.00888,
+      "pairwise_correct": 257,
+      "pairwise_total": 268
+    },
+    {
+      "document": "synthetic-014",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 256,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-018",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 246,
+      "pairwise_total": 250
+    },
+    {
+      "document": "synthetic-020",
+      "selected": "type-compact-plus",
+      "teacher_best": "type-compact-plus",
+      "regret": 0.0,
+      "pairwise_correct": 263,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-022",
+      "selected": "type-open",
+      "teacher_best": "type-open-plus",
+      "regret": 0.002276,
+      "pairwise_correct": 262,
+      "pairwise_total": 268
+    },
+    {
+      "document": "synthetic-026",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 254,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-028",
+      "selected": "type-open-plus",
+      "teacher_best": "type-open-plus",
+      "regret": 0.0,
+      "pairwise_correct": 257,
+      "pairwise_total": 270
+    },
+    {
+      "document": "synthetic-035",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 252,
+      "pairwise_total": 260
+    },
+    {
+      "document": "synthetic-038",
+      "selected": "source",
+      "teacher_best": "type-open-plus",
+      "regret": 0.134048,
+      "pairwise_correct": 248,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-048",
+      "selected": "heading-compact",
+      "teacher_best": "heading-compact",
+      "regret": 0.0,
+      "pairwise_correct": 251,
+      "pairwise_total": 261
+    },
+    {
+      "document": "synthetic-057",
+      "selected": "leading-compact",
+      "teacher_best": "balanced-compact",
+      "regret": 0.004307,
+      "pairwise_correct": 265,
+      "pairwise_total": 265
+    },
+    {
+      "document": "synthetic-059",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 266,
+      "pairwise_total": 268
+    }
+  ],
+  "limits": "Disclosed engineering utility of real DOM measurements; synthetic training only. Not a semantic or calibrated aesthetic model."
+}

@@ -3,7 +3,7 @@
 import argparse,hashlib,subprocess,sys,zipfile
 from pathlib import Path
 R=Path(__file__).resolve().parent.parent
-EXCLUDED={'.git','__pycache__','.venv','node_modules','.DS_Store','work','validation'}
+EXCLUDED={'.git','__pycache__','.venv','node_modules','.DS_Store','work','validation','UPLOAD_zh-CN.md'}
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True);a=p.parse_args();out=Path(a.output).expanduser().resolve()
  if out.is_relative_to(R):raise ValueError('Write release archives outside the repository.')

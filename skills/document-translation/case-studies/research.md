@@ -1,9 +1,9 @@
 # Research and evidence
 
-Decision to practice: Correlation versus causation; population, CI, effect size and hedging.
+Review focus: Population, effect estimate, uncertainty and causal wording.
 
-Use the author-owned paired text in [paired-cases.json](../examples/paired-cases.json), domain key `research`. Read the source as a coherent passage; establish faithful meaning before interpretive wording. These are fictional fixtures, not domain advice.
+Read the `research` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
 
-Acceptance: Preserve 24, 2.4 and 95% CI 0.3–4.5; both versions explicitly avoid a causal claim.
+Retain 24 participants, an estimated difference of 2.4 points and a 95% confidence interval of 0.3–4.5. Both editions must preserve the statement that the association does not establish causation.
 
-Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.
+Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.

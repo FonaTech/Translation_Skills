@@ -1,14 +1,24 @@
 # Changelog
 
-## 1.0.1 — 2026-11-04
+## 1.0.1 — 2026-11-05
 
-- Fixed trailing blank-page removal and visual empty-page detection when a blank page contains a white vector fill.
-- Added a reproducible seeded PDF corpus regression tool with extraction, structure, layout, rendering and raster metrics.
-- Updated current release, README, gallery, upload and Claude plugin metadata to 1.0.1.
+### Reader and editor
 
-- Portable document-translation skill for one or many sources, complete faithful and interpretive editions.
-- Stable source/unit model, task exchange, source and output hashes, glossary checks and review-aware release.
-- PDF/DOCX/static HTML/text/table/raster extraction routes and optional local OCR.
-- Self-contained multilingual HTML, measured PDF pagination, long-table and long-unit handling, alignment archive.
-- Four-client copy installer with dry-run, backups, Clouds overlay and optional Claude plugin manifests.
-- Eight author-owned domain cases, five-language demos, real public-PDF tests and explicit OCR failure evidence.
+- Added 16 interface languages to generated HTML reader controls, with browser-language detection, English fallback and manual selection.
+- Kept interface language changes independent of document text, direction and printed pages.
+- Fixed editor pagination after HTML reimport and checked that the content area remains measurable.
+- Added checks for JPEG/SVG colors, legacy PNG fallbacks and HTML/PDF/DOCX export.
+
+### Figures and pagination
+
+- Fixed inverted CMYK and explicit Decode colors through PDF-context decoding, preserving soft masks and original dark artwork.
+- Compared figures with source crops in browser and print rendering, including PNG fallback checks and evidence freshness.
+- Fixed trailing blank pages, including pages with a white vector fill.
+- Normalized signed PyMuPDF color values before selecting a document accent color.
+
+### Workflow and distribution
+
+- Included the portable dual-edition workflow, source alignment, review records, local OCR routes and four-client installer.
+- Added a seeded PDF corpus regression tool with explicit excerpt/full-document scope and review checks.
+- Included the offline editor, measured layout helpers and synthetic layout-ranker data.
+- Reorganized the English and Chinese guides around installation and use, corrected review-evidence commands and clarified format/release limits.

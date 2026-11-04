@@ -1,0 +1,14 @@
+{
+  "name": "fonatech-translation-skills",
+  "owner": {
+    "name": "Yufeng Zhan"
+  },
+  "plugins": [
+    {
+      "name": "translation-skills",
+      "source": "./",
+      "description": "Complete faithful and interpretive multilingual document editions with HTML/PDF and source alignment.",
+      "version": "1.0.1"
+    }
+  ]
+}

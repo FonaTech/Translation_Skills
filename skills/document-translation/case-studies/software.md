@@ -1,9 +1,9 @@
 # Technical documents and code
 
-Decision to practice: Identifiers, numeric values and negation.
+Review focus: Identifiers, zero values and negation.
 
-Use the author-owned paired text in [paired-cases.json](../examples/paired-cases.json), domain key `software`. Read the source as a coherent passage; establish faithful meaning before interpretive wording. These are fictional fixtures, not domain advice.
+Read the `software` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
 
-Acceptance: Keep timeout_ms, 1500, 0 and user_id; 0 disables timeout and does not mean immediate retry.
+Keep `timeout_ms`, `1500`, `0` and `user_id` unchanged. Here, zero disables the timeout; it does not request an immediate retry. Translate the explanation while preserving code identifiers.
 
-Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.
+Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.

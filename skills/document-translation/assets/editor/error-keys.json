@@ -1,0 +1,19 @@
+{
+  "Invalid ZIP / DOCX file": "error.0",
+  "Too many archive entries": "error.1",
+  "Corrupt ZIP directory": "error.2",
+  "Encrypted or unsafe ZIP entry": "error.3",
+  "Extracted file is too large": "error.4",
+  "Corrupt ZIP entry": "error.5",
+  "This browser cannot decompress DOCX; use a current browser": "error.6",
+  "Decompressed data exceeds the declared size or limit": "error.7",
+  "Unsupported ZIP compression method": "error.8",
+  "ZIP checksum failed": "error.9",
+  "Invalid XML": "error.10",
+  "SVG is missing its PNG export fallback": "error.11",
+  "SVG contains unsupported content": "error.12",
+  "Image is not a supported static SVG / WebP": "error.13",
+  "Image is too large; provide a verified PNG fallback": "error.14",
+  "The browser cannot create a fallback image": "error.15",
+  "Imported text, basic formatting, tables, raster images and supported static SVG. Compare fields, revisions, footnotes, floating objects, numbering and mixed sections with the source.": "msg.docxImported"
+}

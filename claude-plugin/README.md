@@ -1,3 +1,14 @@
-# Claude Code adapter
+# Claude Code
 
-The maintained source is [document-translation](../skills/document-translation/SKILL.md). Install with [tools/install.py](../tools/install.py), following [INSTALL](../docs/INSTALL.md). This directory documents the adapter; it is not a second independent skill copy. Run the portable checks in [REPRODUCIBILITY](../docs/REPRODUCIBILITY.md). Interactive client compatibility still depends on the installed host version and has not been claimed unless it was actually exercised.
+Prepare the Python environment using the [installation guide](../docs/INSTALL.md), then preview and apply the copy:
+
+```bash
+python3 tools/install.py --targets claude --project /path/to/project
+python3 tools/install.py --targets claude --project /path/to/project --apply
+```
+
+Refresh skill discovery and invoke it with `/document-translation`. The maintained [skill source](../skills/document-translation/SKILL.md) is shared across clients.
+
+The root `.claude-plugin/` directory provides the optional plugin route. The manifests here are browsing copies.
+
+Installation tests cover file copies and metadata. See [validation scope](../skills/document-translation/references/validation-summary.md) for what was exercised.

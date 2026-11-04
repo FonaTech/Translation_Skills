@@ -1,9 +1,9 @@
-# Narrative and literary voice
+# Narrative voice
 
-Decision to practice: Imagery, temporal tension, speech and ambiguity.
+Review focus: Imagery, dialogue and the tension between speech and events.
 
-Use the author-owned paired text in [paired-cases.json](../examples/paired-cases.json), domain key `literary`. Read the source as a coherent passage; establish faithful meaning before interpretive wording. These are fictional fixtures, not domain advice.
+Read the `literary` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
 
-Acceptance: Preserve dusk, blue gate, “Tomorrow” and one-week delay. Do not add whispering, motives or new events.
+Keep dusk, the blue gate, “Tomorrow” and the train's one-week delay. Preserve the gap between what Mira says and when the train returns. Added motives, gestures or events would change the scene.
 
-Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.
+Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.
