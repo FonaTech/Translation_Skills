@@ -1,0 +1,23 @@
+{
+  "id": "technical-manual",
+  "name": "技术手册",
+  "family": "manual",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 10.5,
+  "line_height": 1.65,
+  "margin_x_mm": 22,
+  "margin_y_mm": 18,
+  "accent": "#1d6176",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "headings": 0.3,
+    "images": 0.3,
+    "text": 0.7
+  },
+  "structural_signature": "manual:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "annual-report",
+  "name": "年度报告",
+  "family": "annual",
+  "columns": 2,
+  "font": "sans",
+  "body_pt": 10.5,
+  "line_height": 1.65,
+  "margin_x_mm": 18,
+  "margin_y_mm": 19,
+  "accent": "#075f65",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "columns": 2,
+    "tables": 0.25,
+    "images": 0.3
+  },
+  "structural_signature": "annual:2:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

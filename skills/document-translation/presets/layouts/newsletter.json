@@ -1,0 +1,23 @@
+{
+  "id": "newsletter",
+  "name": "三栏通讯",
+  "family": "newsletter",
+  "columns": 3,
+  "font": "serif",
+  "body_pt": 9.8,
+  "line_height": 1.6,
+  "margin_x_mm": 14,
+  "margin_y_mm": 17,
+  "accent": "#314b67",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "columns": 3,
+    "text": 1,
+    "images": 0.2
+  },
+  "structural_signature": "newsletter:3:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

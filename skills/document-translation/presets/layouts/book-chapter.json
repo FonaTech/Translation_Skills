@@ -1,0 +1,23 @@
+{
+  "id": "book-chapter",
+  "name": "书籍章节",
+  "family": "book",
+  "columns": 1,
+  "font": "serif",
+  "body_pt": 11.5,
+  "line_height": 1.85,
+  "margin_x_mm": 28,
+  "margin_y_mm": 25,
+  "accent": "#3e392f",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "text": 1,
+    "images": 0.05,
+    "columns": 1
+  },
+  "structural_signature": "book:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

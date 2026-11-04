@@ -1,0 +1,23 @@
+{
+  "id": "recipe-cards",
+  "name": "分节步骤卡",
+  "family": "recipe",
+  "columns": 2,
+  "font": "sans",
+  "body_pt": 11,
+  "line_height": 1.8,
+  "margin_x_mm": 20,
+  "margin_y_mm": 20,
+  "accent": "#725b37",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "headings": 0.4,
+    "images": 0.25,
+    "columns": 2
+  },
+  "structural_signature": "recipe:2:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

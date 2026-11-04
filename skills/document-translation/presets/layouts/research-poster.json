@@ -1,0 +1,23 @@
+{
+  "id": "research-poster",
+  "name": "横向海报",
+  "family": "poster",
+  "columns": 2,
+  "font": "sans",
+  "body_pt": 14,
+  "line_height": 1.5,
+  "margin_x_mm": 18,
+  "margin_y_mm": 20,
+  "accent": "#384a80",
+  "page_mm": [
+    297,
+    210
+  ],
+  "fit_features": {
+    "images": 0.6,
+    "headings": 0.5,
+    "landscape": 1
+  },
+  "structural_signature": "poster:2:landscape",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

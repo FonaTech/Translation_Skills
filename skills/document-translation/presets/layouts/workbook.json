@@ -1,0 +1,23 @@
+{
+  "id": "workbook",
+  "name": "练习与记录本",
+  "family": "workbook",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 11.5,
+  "line_height": 1.85,
+  "margin_x_mm": 22,
+  "margin_y_mm": 20,
+  "accent": "#385b81",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "headings": 0.3,
+    "tables": 0.3,
+    "text": 0.5
+  },
+  "structural_signature": "workbook:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

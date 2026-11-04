@@ -1,0 +1,23 @@
+{
+  "id": "brochure-panels",
+  "name": "三折面板读本",
+  "family": "brochure",
+  "columns": 3,
+  "font": "sans",
+  "body_pt": 10,
+  "line_height": 1.6,
+  "margin_x_mm": 14,
+  "margin_y_mm": 17,
+  "accent": "#296b72",
+  "page_mm": [
+    297,
+    210
+  ],
+  "fit_features": {
+    "columns": 3,
+    "images": 0.5,
+    "landscape": 1
+  },
+  "structural_signature": "brochure:3:landscape",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

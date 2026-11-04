@@ -1,0 +1,23 @@
+{
+  "id": "contract-classic",
+  "name": "条款文书",
+  "family": "contract",
+  "columns": 1,
+  "font": "serif",
+  "body_pt": 11,
+  "line_height": 1.85,
+  "margin_x_mm": 25,
+  "margin_y_mm": 23,
+  "accent": "#232c36",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "text": 1,
+    "images": 0,
+    "headings": 0.15
+  },
+  "structural_signature": "contract:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

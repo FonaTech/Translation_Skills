@@ -1,0 +1,23 @@
+{
+  "id": "magazine-feature",
+  "name": "杂志特写",
+  "family": "magazine",
+  "columns": 2,
+  "font": "serif",
+  "body_pt": 11,
+  "line_height": 1.75,
+  "margin_x_mm": 20,
+  "margin_y_mm": 21,
+  "accent": "#773e40",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "columns": 2,
+    "images": 0.5,
+    "text": 0.8
+  },
+  "structural_signature": "magazine:2:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

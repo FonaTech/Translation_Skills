@@ -1,0 +1,22 @@
+{
+  "id": "policy-brief",
+  "name": "政策简报",
+  "family": "policy",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 11,
+  "line_height": 1.65,
+  "margin_x_mm": 23,
+  "margin_y_mm": 20,
+  "accent": "#214e7c",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "headings": 0.35,
+    "text": 0.8
+  },
+  "structural_signature": "policy:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

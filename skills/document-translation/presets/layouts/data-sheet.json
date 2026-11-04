@@ -1,0 +1,22 @@
+{
+  "id": "data-sheet",
+  "name": "横向数据页",
+  "family": "datasheet",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 9.5,
+  "line_height": 1.5,
+  "margin_x_mm": 14,
+  "margin_y_mm": 15,
+  "accent": "#27415c",
+  "page_mm": [
+    297,
+    210
+  ],
+  "fit_features": {
+    "tables": 0.8,
+    "landscape": 1
+  },
+  "structural_signature": "datasheet:1:landscape",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

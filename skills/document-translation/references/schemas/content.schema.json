@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source-aligned document content v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "sources",
+    "blocks",
+    "issues"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "file",
+          "sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "page_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "selection_scope": {},
+          "rights": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "source",
+          "units"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "paragraph",
+              "heading",
+              "table",
+              "image",
+              "equation"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "required": [
+              "document_id"
+            ],
+            "properties": {
+              "document_id": {
+                "type": "string"
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "element": {
+                "type": "string"
+              },
+              "bbox": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 4,
+                "maxItems": 4
+              }
+            },
+            "additionalProperties": true
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "source",
+                "translations"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source": {
+                  "type": "string"
+                },
+                "translations": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": [
+                      "faithful",
+                      "interpretive"
+                    ],
+                    "properties": {
+                      "faithful": {
+                        "type": "string"
+                      },
+                      "interpretive": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "asset": {
+            "type": "string"
+          },
+          "header_rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label_policy": {
+            "enum": [
+              "unreviewed",
+              "translated",
+              "no-text",
+              "retained-with-note"
+            ]
+          },
+          "label_note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "open",
+              "resolved",
+              "accepted-exception"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "corrections": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

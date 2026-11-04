@@ -1,0 +1,23 @@
+{
+  "id": "application-form",
+  "name": "表单式档案",
+  "family": "form",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 10.5,
+  "line_height": 1.6,
+  "margin_x_mm": 18,
+  "margin_y_mm": 18,
+  "accent": "#314b5b",
+  "page_mm": [
+    216,
+    279
+  ],
+  "fit_features": {
+    "tables": 0.6,
+    "headings": 0.25,
+    "text": 0.4
+  },
+  "structural_signature": "form:1:Letter",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

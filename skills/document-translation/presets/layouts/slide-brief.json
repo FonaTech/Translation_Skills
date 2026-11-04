@@ -1,0 +1,23 @@
+{
+  "id": "slide-brief",
+  "name": "宽屏简报",
+  "family": "slide",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 14,
+  "line_height": 1.5,
+  "margin_x_mm": 14,
+  "margin_y_mm": 16,
+  "accent": "#294d68",
+  "page_mm": [
+    297,
+    167.1
+  ],
+  "fit_features": {
+    "images": 0.5,
+    "headings": 0.4,
+    "landscape": 1
+  },
+  "structural_signature": "slide:1:wide",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

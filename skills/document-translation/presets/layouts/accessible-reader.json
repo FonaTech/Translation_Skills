@@ -1,0 +1,23 @@
+{
+  "id": "accessible-reader",
+  "name": "大字无障碍",
+  "family": "accessible",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 14,
+  "line_height": 1.95,
+  "margin_x_mm": 24,
+  "margin_y_mm": 22,
+  "accent": "#182c3d",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "text": 1,
+    "columns": 1,
+    "accessibility": 1
+  },
+  "structural_signature": "accessible:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

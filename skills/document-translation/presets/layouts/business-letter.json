@@ -1,0 +1,23 @@
+{
+  "id": "business-letter",
+  "name": "信函",
+  "family": "letter",
+  "columns": 1,
+  "font": "serif",
+  "body_pt": 11.5,
+  "line_height": 1.8,
+  "margin_x_mm": 28,
+  "margin_y_mm": 25,
+  "accent": "#263a4a",
+  "page_mm": [
+    216,
+    279
+  ],
+  "fit_features": {
+    "text": 1,
+    "columns": 1,
+    "images": 0
+  },
+  "structural_signature": "letter:1:Letter",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

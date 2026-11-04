@@ -1,0 +1,39 @@
+.page-body {
+  column-count: var(--column-count);
+  column-gap: var(--column-gap);
+  column-fill: auto;
+}
+
+.page-body > .mast,
+.page-body > .scope-list,
+.page-body > .table-wrap,
+.page-body > figure,
+.page-body > h2 {
+  column-span: all;
+}
+
+.page-body > .paragraph {
+  break-inside: auto;
+}
+
+.adjust-1 {
+  --para-gap: 2.2mm;
+  --head-gap: 4mm;
+  --column-gap: 6mm;
+}
+
+.adjust-2 {
+  --para-gap: 2mm;
+  --head-gap: 3mm;
+  --column-gap: 5mm;
+}
+
+.adjust-2 .paragraph {
+  font-size: max(9.5pt, calc(var(--body-size) * .96));
+}
+
+@media (max-width: 700px) {
+  .layout-document {
+    --column-count: 1 !important;
+  }
+}

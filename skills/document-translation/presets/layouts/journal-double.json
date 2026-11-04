@@ -1,0 +1,24 @@
+{
+  "id": "journal-double",
+  "name": "双栏期刊",
+  "family": "journal",
+  "columns": 2,
+  "font": "serif",
+  "body_pt": 10.2,
+  "line_height": 1.6,
+  "margin_x_mm": 15,
+  "margin_y_mm": 18,
+  "accent": "#244d66",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "text": 1,
+    "columns": 2,
+    "images": 0.25,
+    "tables": 0.1
+  },
+  "structural_signature": "journal:2:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

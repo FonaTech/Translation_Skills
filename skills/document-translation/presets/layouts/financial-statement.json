@@ -1,0 +1,22 @@
+{
+  "id": "financial-statement",
+  "name": "财务报表",
+  "family": "financial",
+  "columns": 1,
+  "font": "sans",
+  "body_pt": 10,
+  "line_height": 1.55,
+  "margin_x_mm": 16,
+  "margin_y_mm": 17,
+  "accent": "#294357",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "tables": 0.7,
+    "text": 0.4
+  },
+  "structural_signature": "financial:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

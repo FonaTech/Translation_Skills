@@ -1,0 +1,551 @@
+{
+  "schema_version": "1.1",
+  "presets": [
+    {
+      "id": "journal-double",
+      "name": "双栏期刊",
+      "family": "journal",
+      "columns": 2,
+      "font": "serif",
+      "body_pt": 10.2,
+      "line_height": 1.6,
+      "margin_x_mm": 15,
+      "margin_y_mm": 18,
+      "accent": "#244d66",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "columns": 2,
+        "images": 0.25,
+        "tables": 0.1
+      },
+      "structural_signature": "journal:2:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "scholarly-single",
+      "name": "单栏学术",
+      "family": "scholarly",
+      "columns": 1,
+      "font": "serif",
+      "body_pt": 11,
+      "line_height": 1.75,
+      "margin_x_mm": 21,
+      "margin_y_mm": 24,
+      "accent": "#303c48",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "columns": 1,
+        "tables": 0.1
+      },
+      "structural_signature": "scholarly:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "technical-manual",
+      "name": "技术手册",
+      "family": "manual",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 10.5,
+      "line_height": 1.65,
+      "margin_x_mm": 22,
+      "margin_y_mm": 18,
+      "accent": "#1d6176",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.3,
+        "images": 0.3,
+        "text": 0.7
+      },
+      "structural_signature": "manual:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "service-guide",
+      "name": "服务指南",
+      "family": "guide",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11,
+      "line_height": 1.7,
+      "margin_x_mm": 18,
+      "margin_y_mm": 18,
+      "accent": "#256456",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.3,
+        "text": 0.7
+      },
+      "structural_signature": "guide:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "contract-classic",
+      "name": "条款文书",
+      "family": "contract",
+      "columns": 1,
+      "font": "serif",
+      "body_pt": 11,
+      "line_height": 1.85,
+      "margin_x_mm": 25,
+      "margin_y_mm": 23,
+      "accent": "#232c36",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "images": 0,
+        "headings": 0.15
+      },
+      "structural_signature": "contract:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "policy-brief",
+      "name": "政策简报",
+      "family": "policy",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11,
+      "line_height": 1.65,
+      "margin_x_mm": 23,
+      "margin_y_mm": 20,
+      "accent": "#214e7c",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.35,
+        "text": 0.8
+      },
+      "structural_signature": "policy:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "annual-report",
+      "name": "年度报告",
+      "family": "annual",
+      "columns": 2,
+      "font": "sans",
+      "body_pt": 10.5,
+      "line_height": 1.65,
+      "margin_x_mm": 18,
+      "margin_y_mm": 19,
+      "accent": "#075f65",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "columns": 2,
+        "tables": 0.25,
+        "images": 0.3
+      },
+      "structural_signature": "annual:2:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "financial-statement",
+      "name": "财务报表",
+      "family": "financial",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 10,
+      "line_height": 1.55,
+      "margin_x_mm": 16,
+      "margin_y_mm": 17,
+      "accent": "#294357",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "tables": 0.7,
+        "text": 0.4
+      },
+      "structural_signature": "financial:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "data-sheet",
+      "name": "横向数据页",
+      "family": "datasheet",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 9.5,
+      "line_height": 1.5,
+      "margin_x_mm": 14,
+      "margin_y_mm": 15,
+      "accent": "#27415c",
+      "page_mm": [
+        297,
+        210
+      ],
+      "fit_features": {
+        "tables": 0.8,
+        "landscape": 1
+      },
+      "structural_signature": "datasheet:1:landscape",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "workbook",
+      "name": "练习与记录本",
+      "family": "workbook",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11.5,
+      "line_height": 1.85,
+      "margin_x_mm": 22,
+      "margin_y_mm": 20,
+      "accent": "#385b81",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.3,
+        "tables": 0.3,
+        "text": 0.5
+      },
+      "structural_signature": "workbook:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "application-form",
+      "name": "表单式档案",
+      "family": "form",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 10.5,
+      "line_height": 1.6,
+      "margin_x_mm": 18,
+      "margin_y_mm": 18,
+      "accent": "#314b5b",
+      "page_mm": [
+        216,
+        279
+      ],
+      "fit_features": {
+        "tables": 0.6,
+        "headings": 0.25,
+        "text": 0.4
+      },
+      "structural_signature": "form:1:Letter",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "business-letter",
+      "name": "信函",
+      "family": "letter",
+      "columns": 1,
+      "font": "serif",
+      "body_pt": 11.5,
+      "line_height": 1.8,
+      "margin_x_mm": 28,
+      "margin_y_mm": 25,
+      "accent": "#263a4a",
+      "page_mm": [
+        216,
+        279
+      ],
+      "fit_features": {
+        "text": 1,
+        "columns": 1,
+        "images": 0
+      },
+      "structural_signature": "letter:1:Letter",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "internal-memo",
+      "name": "备忘录",
+      "family": "memo",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11,
+      "line_height": 1.65,
+      "margin_x_mm": 20,
+      "margin_y_mm": 18,
+      "accent": "#43536a",
+      "page_mm": [
+        216,
+        279
+      ],
+      "fit_features": {
+        "text": 0.9,
+        "headings": 0.25
+      },
+      "structural_signature": "memo:1:Letter",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "newsletter",
+      "name": "三栏通讯",
+      "family": "newsletter",
+      "columns": 3,
+      "font": "serif",
+      "body_pt": 9.8,
+      "line_height": 1.6,
+      "margin_x_mm": 14,
+      "margin_y_mm": 17,
+      "accent": "#314b67",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "columns": 3,
+        "text": 1,
+        "images": 0.2
+      },
+      "structural_signature": "newsletter:3:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "magazine-feature",
+      "name": "杂志特写",
+      "family": "magazine",
+      "columns": 2,
+      "font": "serif",
+      "body_pt": 11,
+      "line_height": 1.75,
+      "margin_x_mm": 20,
+      "margin_y_mm": 21,
+      "accent": "#773e40",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "columns": 2,
+        "images": 0.5,
+        "text": 0.8
+      },
+      "structural_signature": "magazine:2:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "brochure-panels",
+      "name": "三折面板读本",
+      "family": "brochure",
+      "columns": 3,
+      "font": "sans",
+      "body_pt": 10,
+      "line_height": 1.6,
+      "margin_x_mm": 14,
+      "margin_y_mm": 17,
+      "accent": "#296b72",
+      "page_mm": [
+        297,
+        210
+      ],
+      "fit_features": {
+        "columns": 3,
+        "images": 0.5,
+        "landscape": 1
+      },
+      "structural_signature": "brochure:3:landscape",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "research-poster",
+      "name": "横向海报",
+      "family": "poster",
+      "columns": 2,
+      "font": "sans",
+      "body_pt": 14,
+      "line_height": 1.5,
+      "margin_x_mm": 18,
+      "margin_y_mm": 20,
+      "accent": "#384a80",
+      "page_mm": [
+        297,
+        210
+      ],
+      "fit_features": {
+        "images": 0.6,
+        "headings": 0.5,
+        "landscape": 1
+      },
+      "structural_signature": "poster:2:landscape",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "slide-brief",
+      "name": "宽屏简报",
+      "family": "slide",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 14,
+      "line_height": 1.5,
+      "margin_x_mm": 14,
+      "margin_y_mm": 16,
+      "accent": "#294d68",
+      "page_mm": [
+        297,
+        167.1
+      ],
+      "fit_features": {
+        "images": 0.5,
+        "headings": 0.4,
+        "landscape": 1
+      },
+      "structural_signature": "slide:1:wide",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "book-chapter",
+      "name": "书籍章节",
+      "family": "book",
+      "columns": 1,
+      "font": "serif",
+      "body_pt": 11.5,
+      "line_height": 1.85,
+      "margin_x_mm": 28,
+      "margin_y_mm": 25,
+      "accent": "#3e392f",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "images": 0.05,
+        "columns": 1
+      },
+      "structural_signature": "book:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "literary-verse",
+      "name": "文学与诗行",
+      "family": "verse",
+      "columns": 1,
+      "font": "serif",
+      "body_pt": 12,
+      "line_height": 1.95,
+      "margin_x_mm": 30,
+      "margin_y_mm": 28,
+      "accent": "#403f48",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "linebreaks": 0.6,
+        "columns": 1
+      },
+      "structural_signature": "verse:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "itinerary-timeline",
+      "name": "行程与时间线",
+      "family": "timeline",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11,
+      "line_height": 1.75,
+      "margin_x_mm": 25,
+      "margin_y_mm": 20,
+      "accent": "#2f6165",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.4,
+        "text": 0.7
+      },
+      "structural_signature": "timeline:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "recipe-cards",
+      "name": "分节步骤卡",
+      "family": "recipe",
+      "columns": 2,
+      "font": "sans",
+      "body_pt": 11,
+      "line_height": 1.8,
+      "margin_x_mm": 20,
+      "margin_y_mm": 20,
+      "accent": "#725b37",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.4,
+        "images": 0.25,
+        "columns": 2
+      },
+      "structural_signature": "recipe:2:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "faq-handbook",
+      "name": "问答手册",
+      "family": "faq",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 11.5,
+      "line_height": 1.75,
+      "margin_x_mm": 22,
+      "margin_y_mm": 20,
+      "accent": "#385c82",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "headings": 0.5,
+        "text": 0.9
+      },
+      "structural_signature": "faq:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    },
+    {
+      "id": "accessible-reader",
+      "name": "大字无障碍",
+      "family": "accessible",
+      "columns": 1,
+      "font": "sans",
+      "body_pt": 14,
+      "line_height": 1.95,
+      "margin_x_mm": 24,
+      "margin_y_mm": 22,
+      "accent": "#182c3d",
+      "page_mm": [
+        210,
+        297
+      ],
+      "fit_features": {
+        "text": 1,
+        "columns": 1,
+        "accessibility": 1
+      },
+      "structural_signature": "accessible:1:A4",
+      "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+    }
+  ]
+}

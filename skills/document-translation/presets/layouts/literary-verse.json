@@ -1,0 +1,23 @@
+{
+  "id": "literary-verse",
+  "name": "文学与诗行",
+  "family": "verse",
+  "columns": 1,
+  "font": "serif",
+  "body_pt": 12,
+  "line_height": 1.95,
+  "margin_x_mm": 30,
+  "margin_y_mm": 28,
+  "accent": "#403f48",
+  "page_mm": [
+    210,
+    297
+  ],
+  "fit_features": {
+    "text": 1,
+    "linebreaks": 0.6,
+    "columns": 1
+  },
+  "structural_signature": "verse:1:A4",
+  "content_policy": "Presentation only. Never infer missing labels, claims, steps, fields or facts from the template."
+}

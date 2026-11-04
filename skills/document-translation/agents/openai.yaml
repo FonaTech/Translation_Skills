@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Translation"
+  short_description: "Faithful and interpretive multilingual document editions"
+  default_prompt: "Use $document-translation to create both editions with checked HTML/PDF and source alignment."

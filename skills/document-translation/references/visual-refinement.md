@@ -1,0 +1,26 @@
+# Visual and content refinement
+
+The source document supplies a design reference, not a universal template. Reconstruct its useful visual relationships from page evidence: reading order, text measure, column count, title and metadata hierarchy, paragraph rhythm, figure scale and placement, caption proximity, table density, whitespace, running material and page numbering. Preserve page shape where it helps readers compare a translation to its source. Reflow translated text naturally inside that structure; do not stretch glyphs, insert filler, shrink everything, or force the source's page count.
+
+## Agent loop
+
+1. Keep extraction and semantic translation settled before layout work. Run `audit`, prepare extraction/semantic/visual evidence checklists, then inspect source page previews and the initially rendered faithful, interpretive and alignment outputs. The current model must open the images itself. A numeric score, image hash, `layout.json`, automated contact sheet, or script assertion cannot stand in for this inspection.
+2. Compare corresponding source and output pages. Every printed output page labels its contributing source page or pages. Inspect each source page and each output page, including page edges, footers, glyphs, figures, captions, tables, and any sparse or unusually dense leaves. Look at a full-page overview and enlarge pages where type, clipping or figure detail is hard to judge.
+3. State the visible defect in terms of a particular page/block and its effect. Make the smallest presentation-only change that repairs it: page geometry and margins, columns, title/body hierarchy, spacing, image width/span, caption binding, or table type/padding. Use a JSON patch with `reason`, inspected project-relative `evidence` paths, and allowlisted `documents`/`blocks`. `scripts/refinement.py` validates every value and rejects translation-text edits. Caption links must point to a unique block in the same document and source page.
+4. Apply with `translate.py refine`, rebuild, rerender, and reopen both the affected output and corresponding source page. Record the before/after finding and whether it is resolved. A changed HTML file is not proof that the PDF view is fixed.
+5. Retain the source-adapted design when it reads well. If a severe defect persists after at least one rendered adjustment and no safe adjustment remains, record a specific source-layout rejection using `layout-review`. Only then compare the ranked preset candidates. Low source-profile confidence requests closer inspection; it never triggers template fallback. A preset still needs its own render, adjustment and visual review.
+6. Fill every checklist entry with concrete observations only after that inspection. Do not use `all`, a count, or a batch hash as a substitute for page/unit/block coverage. If remaining translation uncertainty or source damage affects layout, record the source issue and keep release blocked.
+
+## Layout contracts
+
+- Keep a figure and its caption as one unit when their source relationship is known. Preserve the source scale when readable; use page span only when the source figure spans columns or needs it at legible size.
+- Keep a table title with its table. Keep headings with enough following prose to identify the section. Repeat table headers on continuation pages and do not leave a table heading stranded.
+- Maintain reading order and stable source locators through reflow. For selected noncontiguous source pages, preserve a visible page boundary so page correspondence remains honest.
+- Do not conceal extraction loss by adding prose. Exact claims, names, units, data, citation markers and figure identifiers remain traceable to their source units. Notes stay visually distinct from translated prose.
+- Mark unresolved clipping, missing fonts, unreadable symbols, figure-label exceptions and low-quality scans. Never mark a page successful only because it fits a rectangle.
+
+The browser runtime uses deterministic measurements and bounded CSS adjustment; there is no bundled ML model. Client-side presentation heuristics propose and validate geometry. The invoking language model supplies source-aware judgement and makes documented refinements inside the current agent loop. Scores are rankings, not calibrated aesthetic confidence.
+
+## Evidence checklist fields
+
+`review_evidence.py` creates a project-local template tied to the current content snapshot. For semantic review, every stable unit needs separate faithful and interpretive observations. For extraction review, every block needs a structural disposition. For visual review, every page of every delivered PDF needs its image hash, page observation, structural disposition and any actual correction; the source page images used for comparison also need observations. Edit the generated checklist, then use `translate.py review --evidence FILE`. Any subsequent content, design, HTML, or PDF change makes the evidence stale and requires another inspection.
