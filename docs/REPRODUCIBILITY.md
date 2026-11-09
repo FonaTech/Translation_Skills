@@ -4,9 +4,10 @@ Run commands from the repository root. Keep generated projects, downloaded sourc
 
 ## Structure and unit tests
 
-With core dependencies installed:
+Install core and optional dependencies for the full suite, including NumPy-based training tests:
 
 ```bash
+python3 -m pip install -r requirements-core.txt -r requirements-optional.txt
 python3 tools/validate.py
 python3 -m unittest discover -s tests -v
 python3 tools/verify_platform_contract.py --output /path/to/platform-checks.json

@@ -25,6 +25,7 @@
 - Removed generated demonstrations and outdated validation snapshots from the package.
 - Kept only public skill resources, model assets, documentation, development tools and tests.
 - Updated version metadata and the public-inventory checks used by checksums and release packaging.
+- Installed optional development dependencies in CI so NumPy-based training tests run in clean environments.
 
 ## 1.0.1 — 2026-11-05
 

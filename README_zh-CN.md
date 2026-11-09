@@ -71,6 +71,7 @@ python3 tools/install.py --targets codex --project /path/to/project --apply
 技能入口位于 [`skills/document-translation`](skills/document-translation/SKILL.md)。其中，`references/` 存放翻译和复核方法，`scripts/` 存放本地处理脚本；仓库根目录下的 `tools/` 用于安装、验证、模型训练和打包。
 
 ```bash
+python3 -m pip install -r requirements-optional.txt
 python3 tools/validate.py
 python3 -m unittest discover -s tests -v
 python3 tools/checksums.py

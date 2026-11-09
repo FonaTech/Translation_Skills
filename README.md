@@ -71,6 +71,7 @@ The editor imports HTML and DOCX. It exports HTML, browser-print PDF, DOCX, ODT,
 The skill lives in [`skills/document-translation`](skills/document-translation/SKILL.md). Its `references/` folder describes translation and review methods; `scripts/` contains the local workflow helpers. Repository-level `tools/` handles installation, validation, model training and packaging.
 
 ```bash
+python3 -m pip install -r requirements-optional.txt
 python3 tools/validate.py
 python3 -m unittest discover -s tests -v
 python3 tools/checksums.py
