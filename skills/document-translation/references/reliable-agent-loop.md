@@ -1,25 +1,33 @@
-# Reliable translation with limited model capacity
+# Translation batches and rendered review
 
-The quality floor comes from small coherent batches, explicit source boundaries and verified repair. Mechanical checks cannot certify translation accuracy. Use the invoking client model; no separate translation service is required.
+Use coherent batches, stable source IDs and source-based correction. The invoking client model supplies both translations; no separate translation endpoint is required.
 
-## Inspect before translation
+## Before translating
 
-Inspect every selected source page and extraction warning. Repair damaged reading order, duplicated table text, broken characters and figure/caption placement against the page. Record source corrections separately; never improve the author's argument during extraction repair. Preserve legitimate fragments. Establish a small project glossary from the supplied context.
+Inspect selected source pages and extraction warnings. Correct reading order, duplicates, broken characters, table cells and figure/caption relationships against the page. Record source corrections separately and preserve legitimate fragments. Establish terminology from the supplied context.
 
-## Bounded packets
+## Packets and meaning
 
-`translate.py tasks PROJECT --language TAG --size 12 --max-chars 6000 --context-chars 1000` emits source hashes, expected IDs, sentence hints and edition contracts. For complex material, lower the size to 3–6 units and read the surrounding paragraph. Larger coherent batches are possible for capable models, with the same checks. The task index supports resuming only pending IDs. Context-only neighbors are clipped to the context budget; selected source units are never truncated. A single oversized unit is emitted intact rather than summarized. Do not summarize a long unit to fit context.
+`translate.py tasks PROJECT --language TAG --size 12 --max-chars 6000 --context-chars 1000` emits source hashes, expected IDs, sentence hints and neighboring context. Smaller batches can help difficult material. Context is bounded; selected source units are not truncated. Persist completed IDs and resume pending work.
 
-1. Identify actor, action, object, conditions, scope, negation and uncertainty. Verify numbers, signs, units, names and references.
-2. Translate faithfully from the visible source. Do not complete fragments, supplement reasoning or explain sound prose. Put source uncertainties in separate notes.
-3. Write the interpretive edition from the same facts and qualifications. Improve expression without summarizing, omitting or inventing.
-4. Compare both strings back to the source. Resolve added explanations, omitted conditions, changed agents, reversed comparisons and strengthened claims before applying.
-5. Retain the source hash and expected IDs; apply every expected ID once. Apply success is not semantic review.
+For each unit, retain actors, actions, conditions, scope, negation, uncertainty, comparisons, quantities, units, named components and references. Compare both editions directly with the source. Preserve printed terms and explicit abbreviation expansions; a source ambiguity belongs in a separate note until the page establishes an extraction error.
 
-Run audit and optional glossary checks after each section. A number warning requests inspection, not automatic correction. Save progress by IDs and resume missing work. Never fill incomplete translation by copying source text or inserting placeholders. The task generator does not attest review.
+Packet claim-scope, quantity and source-edge excerpts help locate possible omissions. They are review prompts rather than a complete semantic inventory. Check the whole unit and its source page. Context can disambiguate a fragment but must not supply missing words or move content between unchanged IDs.
 
-## Render and repair
+Preserve `source_hash` and `expected_ids`. Apply each expected ID once. A successful apply records text without establishing semantic correctness. Inspect audit and glossary warnings after each section; number differences need explanation rather than automatic replacement.
 
-Start with the source-adapted design. The offline model ranks measured presentation candidates; independent hard gates reject text loss and overflow. The current agent opens actual source/output images, identifies concrete defects, applies presentation-only refinements, rerenders and reinspects. Only severe documented defects with no safe remaining adjustment permit ranked template fallback. Select the closest compatible template.
+## Checked source joins
 
-The final gate enumerates every selected source block, translated unit and delivered page. Missing or stale evidence blocks release. If ambiguity cannot be resolved, report the exact incomplete scope. Describe the remaining uncertainty with its source location.
+For a sentence or reference split across columns/pages, inspect every contributing source image. `translate.py join-source PROJECT PACKET.json` accepts source_hash, reviewer, reason, inspected evidence and ordered unit_ids. It joins existing untranslated prose, records contributor text/locations in source_segments and creates a new ID. Optional separators choose a space or no space at each boundary, such as within an intact DOI.
+
+The operation rejects cross-document joins and skipped narrative content. It cannot supply missing words. Regenerate tasks, translate the new ID and review alignment. For long merged units, explicit alignment_groups must cover source sentences in order and match both complete translations.
+
+## Render, edit and export
+
+Start with source-adapted design. Inspect actual source and output images, describe a concrete defect, apply a presentation patch, rebuild and reopen the affected pages. A ranked template fallback requires a documented severe defect after a rendered adjustment. Model rankings and geometry scores do not replace page inspection.
+
+Compare generated HTML opened from disk with the editor before and after changes. Check painted element positions, typography, page distribution, table column proportions and figure/caption placement. Manual locks and local formatting must survive optimization and exports. Retain colgroups on continued tables, source locations on split alignment rows and every contributor in merged source units.
+
+Inspect PDF and DOCX exports in their actual readers. Verify text, captions, figure dimensions, fonts and native image fallbacks. Prefer a fresh page to shrinking a readable figure into the remainder of a crowded row. Existing document-title metadata or an explicit display override should guide titles.
+
+Complete the block/unit/page review checklists after inspection. Content, layout or output changes require fresh evidence. Keep unresolved ambiguity attached to its location and report the remaining scope accurately.

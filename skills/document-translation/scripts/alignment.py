@@ -26,4 +26,4 @@ def rows(unit,language):
  if not groups:return [unit]
  return [{'id':g['id'],'source':g['source'],'source_sentence_ids':g['source_sentence_ids'],
           'translations':{language:{ed:g[ed] for ed in ['faithful','interpretive']}},
-          'notes':unit.get('notes',[]),'parent_unit_id':unit['id']} for g in groups]
+          'notes':unit.get('notes',[]),'source_segments':unit.get('source_segments',[]),'parent_unit_id':unit['id']} for g in groups]

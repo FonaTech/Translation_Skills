@@ -30,7 +30,7 @@ class CorpusScopeTests(unittest.TestCase):
  def test_pdf_image_size_is_source_relative(self):
   import fitz
   with tempfile.TemporaryDirectory() as name:
-   root=Path(name);im=fitz.open();im.new_page(width=100,height=60).insert_text((5,25),'Plot');pix=im[0].get_pixmap();src=root/'source.pdf';d=fitz.open();p=d.new_page(width=600,height=800);p.insert_text((40,30),'Source');p.insert_image(fitz.Rect(40,80,250,206),pixmap=pix);d.save(src);d.close();im.close();project=root/'project'
+   root=Path(name);im=fitz.open();im.new_page(width=100,height=60).insert_text((5,25),'Plot');pix=im[0].get_pixmap();src=root/'source.pdf';d=fitz.open();p=d.new_page(width=600,height=800);p.insert_text((40,30),'Source');p.insert_image(fitz.Rect(40,80,250,206),pixmap=pix);p.insert_text((40,224),'Figure 1. Original plot.',fontsize=9);d.save(src);d.close();im.close();project=root/'project'
    with contextlib.redirect_stdout(io.StringIO()):
     t.init(argparse.Namespace(project=str(project),title='Fixture',languages='zh-Hans',style='editorial',page_size='A4',columns=1));t.ingest(argparse.Namespace(project=str(project),files=[str(src)],pages=None,password=None,order='auto',tables=False))
    _,_,c=t.project(project);b=next(b for b in c['blocks'] if b['type']=='image');self.assertAlmostEqual(b['width_mm'],74.1,places=1);self.assertEqual(b['presentation']['span'],'column')

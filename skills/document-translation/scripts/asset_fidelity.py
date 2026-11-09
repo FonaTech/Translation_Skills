@@ -10,6 +10,38 @@ import json
 import os
 
 GATE_VERSION = 'source-appearance-1.0.1'
+PDF_COMPARISON_VERSION = 'physical-page-grid-1'
+
+
+def compare_pdf_region(source_page, source_bbox, output_page, output_bbox, reference, candidate, native_text_exclusions=None, raster_xrefs=None):
+    """Render declared source/output regions on the same physical pixel grid.
+
+    Independently clipped pixmaps round their edges to different device pixels.
+    Resizing those crops compares padding and sampling phase as well as artwork.
+    Place the source crop at the declared output rectangle on an empty page,
+    then render both pages with identical clips, resolution and RGB settings.
+    No offset search, content matching or threshold adjustment is performed.
+    """
+    import fitz
+    source_bbox, output_bbox = fitz.Rect(source_bbox), fitz.Rect(output_bbox)
+    if source_bbox.is_empty or not source_page.rect.contains(source_bbox):
+        raise ValueError('Invalid source comparison region.')
+    if output_bbox.is_empty or not output_page.rect.contains(output_bbox):
+        raise ValueError('Invalid output comparison region.')
+    # Up to 576 dpi retains small line art; cap large figure memory.
+    scale = min(8, 1536 / max(output_bbox.width, output_bbox.height))
+    with fitz.open() as expected:
+        page = expected.new_page(width=output_page.rect.width, height=output_page.rect.height)
+        from vector_assets import source_crop_page
+        with source_crop_page(source_page,native_text_exclusions,raster_xrefs) as reviewed:
+            page.show_pdf_page(output_bbox, reviewed.parent, reviewed.number,
+                               clip=source_bbox, keep_proportion=False)
+        for pg, destination in [(page, reference), (output_page, candidate)]:
+            pg.get_pixmap(clip=output_bbox, matrix=fitz.Matrix(scale, scale),
+                          colorspace=fitz.csRGB, alpha=False).save(destination)
+    return {**compare_images(reference, candidate),
+            'comparison_method': PDF_COMPARISON_VERSION,
+            'render_scale': scale, 'source_bbox': list(source_bbox)}
 
 
 def compare_images(reference, candidate):
@@ -63,8 +95,11 @@ def verify_project(path, browser=None):
     from PIL import Image
     from playwright.sync_api import sync_playwright
     from translate import project, safe, sha, write, digest
-    from vector_assets import export_crop, embedded_raster_colors
+    from vector_assets import export_crop, embedded_raster_colors, source_crop_page
     r, m, c = project(path)
+    from structure_layout import read_map
+    for source in c['sources']:
+        if source.get('layout_ir'): read_map(r,source,c)
     before_content = digest(c)
     sources = {s['id']: s for s in c['sources']}
     out = r / 'reports/asset-fidelity'
@@ -86,7 +121,9 @@ def verify_project(path, browser=None):
             pdf = safe(r, source['file'])
             rec = {'block': b['id'], 'source_sha256': source['sha256'],
                    'source_page': b['source'].get('page'), 'bbox': b['source'].get('bbox'),
-                   'original_asset': b['asset'], 'original_asset_sha256': sha(asset)}
+                   'original_asset': b['asset'], 'original_asset_sha256': sha(asset),
+                   'native_text_exclusions': b['source'].get('native_text_exclusions',[]),
+                   'raster_xrefs': b['source'].get('raster_xrefs')}
             if sha(pdf) != source['sha256']:
                 raise ValueError('Figure source hash mismatch: ' + b['id'])
             if b.get('label_policy') == 'translated' or pdf.suffix.lower() != '.pdf' or not rec['bbox'] or not rec['source_page']:
@@ -110,7 +147,8 @@ def verify_project(path, browser=None):
                 rec['effective_visible_bbox'] = list(bb)
                 scale = min(2.5, 2400 / max(bb.width, bb.height))
                 ref = out / (b['id'] + '-source.png')
-                pg.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=bb, colorspace=fitz.csRGB, alpha=False).save(ref)
+                with source_crop_page(pg,rec['native_text_exclusions'],rec['raster_xrefs']) as reviewed:
+                    reviewed.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=bb, colorspace=fitz.csRGB, alpha=False).save(ref)
                 with Image.open(ref) as im:
                     width, height = im.size
                 candidate = out / (b['id'] + '-browser.png')
@@ -125,7 +163,7 @@ def verify_project(path, browser=None):
                     risky = any(x['components'] not in (1, 3) for x in embedded_raster_colors(asset.read_bytes()))
                     if risky or 'color_normalization' not in b.get('vector', {}):
                         try:
-                            result = export_crop(pg, bb, asset.with_suffix(''), scale=scale)
+                            result = export_crop(pg, bb, asset.with_suffix(''), scale=scale,native_text_exclusions=rec['native_text_exclusions'],raster_xrefs=rec['raster_xrefs'])
                             b['vector'] = result['metadata']
                             b['asset_sha256'] = sha(asset)
                             b['asset_fallback'] = result['fallback'].relative_to(r).as_posix()
@@ -188,6 +226,11 @@ def verify_project(path, browser=None):
         br.close()
     changed = before_content != digest(c)
     if changed:
+        # Legitimate source-bound reexports can change asset hashes. Refresh
+        # only after this gate's own repairs, never conceal unrelated IR edits.
+        from structure_layout import write_map
+        for source in c['sources']:
+            if Path(source.get('file','')).suffix.lower()=='.pdf':write_map(r,c,source)
         write(r / 'content.json', c)
     report = {'gate_version': GATE_VERSION, 'assets': records,
               'verified_source_crops': sum(x['status'] == 'mechanical-source-appearance-pass' for x in records),
@@ -219,14 +262,25 @@ def verify_rendered_figures(project_path, browser_page, pdf_path, edition, page_
     dom = browser_page.evaluate('''selector=>[...document.querySelectorAll(selector)].map((p,i)=>{
       const r=p.getBoundingClientRect();return {page:i+1,w:r.width,h:r.height,images:
       [...p.querySelectorAll('figure[data-block] img')].map(im=>{
-        const b=im.getBoundingClientRect(),cs=getComputedStyle(im);return {
+        const b=im.getBoundingClientRect(),cs=getComputedStyle(im);let nw=im.naturalWidth,nh=im.naturalHeight;
+        // HTMLImageElement rounds SVG intrinsic dimensions to integers. Object
+        // fit uses the fractional SVG ratio; rounding it shifts the PDF crop.
+        if(im.src.startsWith('data:image/svg+xml')){
+          const comma=im.src.indexOf(','),head=im.src.slice(0,comma),raw=im.src.slice(comma+1);
+          const svg=new DOMParser().parseFromString(head.includes(';base64')?atob(raw):decodeURIComponent(raw),'image/svg+xml').documentElement;
+          const vb=svg.getAttribute('viewBox')?.trim().split(/[ ,]+/).map(Number);
+          if(vb?.length===4&&vb[2]>0&&vb[3]>0){nw=vb[2];nh=vb[3];}
+        }
+        return {
           block:im.closest('figure').dataset.block,x:b.x-r.x,y:b.y-r.y,w:b.width,h:b.height,
-          nw:im.naturalWidth,nh:im.naturalHeight,fit:cs.objectFit,position:cs.objectPosition};
+          nw,nh,fit:cs.objectFit,position:cs.objectPosition};
       })};})''', page_selector)
     output = r / 'reports/asset-fidelity' / edition
     output.mkdir(parents=True, exist_ok=True)
     records = []
     seen = set()
+    sources = {s['id']: s for s in c['sources']}
+    blocks = {b['id']: b for b in c['blocks']}
     with fitz.open(pdf_path) as doc:
         for item in dom:
             if item['page'] > len(doc):
@@ -260,19 +314,31 @@ def verify_rendered_figures(project_path, browser_page, pdf_path, edition, page_
                 elif im['fit'] in {'cover', 'none'}:
                     records.append({**rec, 'pass': False, 'error': 'Figure may crop source artwork; inspect object-fit.'})
                     continue
-                bb = fitz.Rect(x/item['w']*pg.rect.width, y/item['h']*pg.rect.height,
-                               (x+w)/item['w']*pg.rect.width, (y+h)/item['h']*pg.rect.height)
+                # Chromium prints at 96 CSS px / 72 PDF pt with scale=1.
+                # Its rounded MediaBox is not an independent x/y scale.
+                bb = fitz.Rect(x * .75, y * .75, (x+w) * .75, (y+h) * .75)
                 if not pg.rect.contains(bb):
                     records.append({**rec, 'pass': False, 'error': 'Figure extends beyond the PDF page.'})
                     continue
                 dest = output / (im['block'] + '-p' + str(item['page']) + '.png')
-                pg.get_pixmap(clip=bb, matrix=fitz.Matrix(3,3), colorspace=fitz.csRGB, alpha=False).save(dest)
-                metrics = compare_images(safe(r, references[im['block']]['reference']), dest)
+                expected = dest.with_name(dest.stem + '-expected.png')
+                block = blocks[im['block']]
+                source = sources[block['source']['document_id']]
+                source_file = safe(r, source['file'])
+                if sha(source_file) != source['sha256']:
+                    raise ValueError('Figure source hash mismatch: ' + im['block'])
+                with fitz.open(source_file) as source_pdf:
+                    source_page = source_pdf[block['source']['page'] - 1]
+                    source_bbox = fitz.Rect(block['source']['bbox']) & source_page.rect
+                    metrics = compare_pdf_region(source_page, source_bbox, pg, bb, expected, dest,block['source'].get('native_text_exclusions'),block['source'].get('raster_xrefs'))
                 records.append({**rec, **metrics, 'pdf_bbox': list(bb),
                                 'reference_sha256': references[im['block']]['reference_sha256'],
+                                'expected_crop': expected.relative_to(r).as_posix(),
+                                'expected_sha256': sha(expected),
                                 'rendered_crop': dest.relative_to(r).as_posix(), 'rendered_sha256': sha(dest)})
     missing = sorted(set(references) - seen)
-    result = {'edition': edition, 'pdf_sha256': sha(pdf_path), 'media': 'print', 'figures': records,
+    result = {'edition': edition, 'pdf_sha256': sha(pdf_path), 'media': 'print',
+              'comparison_method': PDF_COMPARISON_VERSION, 'figures': records,
               'missing_figures': missing, 'pass': not missing and all(x.get('pass') for x in records),
               'meaning_verified': False}
     write(r / 'reports' / ('figure-pdf-' + edition + '.json'), result)
@@ -297,7 +363,7 @@ def release_errors(r, m, c):
     for b in blocks:
         rec = records[b['id']]
         source = sources[b['source']['document_id']]
-        if rec.get('source_sha256') != source['sha256'] or rec.get('source_page') != b['source'].get('page') or rec.get('bbox') != b['source'].get('bbox'):
+        if rec.get('source_sha256') != source['sha256'] or rec.get('source_page') != b['source'].get('page') or rec.get('bbox') != b['source'].get('bbox') or rec.get('native_text_exclusions',[]) != b['source'].get('native_text_exclusions',[]) or rec.get('raster_xrefs') != b['source'].get('raster_xrefs'):
             errors.append({'code': 'asset-fidelity-source-stale', 'block': b['id']})
         if rec.get('status') == 'requires-native-source-visual-review':
             # The existing all-page visual evidence contract still applies.
@@ -337,7 +403,7 @@ def rendered_release_errors(r, m, c):
                 errors.append({'code': 'pdf-figure-evidence-missing', 'edition': name})
                 continue
             report = read(file)
-            if report.get('media') != 'print' or not report.get('pass') or report.get('pdf_sha256') != sha(pdf) or report.get('missing_figures') or {x['block'] for x in report.get('figures', [])} != expected:
+            if report.get('media') != 'print' or report.get('comparison_method') != PDF_COMPARISON_VERSION or not report.get('pass') or report.get('pdf_sha256') != sha(pdf) or report.get('missing_figures') or {x['block'] for x in report.get('figures', [])} != expected:
                 errors.append({'code': 'pdf-figure-evidence-failed-or-stale', 'edition': name})
             for image in report.get('figures', []):
                 reference = references.get(image['block'], {})
@@ -346,6 +412,9 @@ def rendered_release_errors(r, m, c):
                 crop = safe(r, image.get('rendered_crop', 'missing'))
                 if not image.get('pass') or not crop.is_file() or sha(crop) != image.get('rendered_sha256'):
                     errors.append({'code': 'pdf-figure-crop-failed-or-stale', 'edition': name, 'block': image['block']})
+                crop = safe(r, image.get('expected_crop', 'missing'))
+                if image.get('comparison_method') != PDF_COMPARISON_VERSION or not crop.is_file() or sha(crop) != image.get('expected_sha256'):
+                    errors.append({'code': 'pdf-figure-expected-crop-stale', 'edition': name, 'block': image['block']})
     return errors
 
 

@@ -6,3 +6,10 @@ work/
 *.tmp
 *.log
 node_modules/
+validation/
+UPLOAD_zh-CN.md
+译校与交付说明.md
+DELIVERY_NOTES.md
+delivery-notes.md
+private/
+delivery/

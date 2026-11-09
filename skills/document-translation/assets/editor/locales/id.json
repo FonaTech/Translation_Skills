@@ -165,11 +165,11 @@
   "msg.span": "Pengaturan lebar penuh berubah; periksa pratinjau",
   "msg.recovered": "Proyek tersimpan di peramban ini dipulihkan",
   "err.project": "Proyek tidak memiliki bagian dokumen yang valid",
-  "err.fileSize": "Berkas melebihi 45 MB; bagi menjadi beberapa bagian",
+  "err.fileSize": "Berkas melebihi 256 MB; bagi menjadi beberapa bagian",
   "err.textChanged": "Penyesuaian mengubah teks; perubahan dikembalikan",
   "err.imageSize": "Gambar melebihi 15 MB; kompres sebelum disisipkan",
   "err.imageType": "Gunakan SVG statis mandiri, PNG, JPEG, GIF, atau WebP",
-  "err.htmlSize": "HTML tidak valid atau masukan melebihi 50 MB",
+  "err.htmlSize": "HTML tidak valid atau masukan melebihi 256 MB",
   "prompt.rows": "Baris, termasuk kepala tabel",
   "prompt.cols": "Kolom",
   "prompt.link": "Alamat tautan (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Baris tabel melebihi area isi; pecah secara manual",
   "diag.header": "Kepala tabel melebihi area isi",
   "mobile.settings": "Tampilkan / sembunyikan pengaturan tata letak",
-  "zoom.fit": "Sesuaikan lebar"
+  "zoom.fit": "Sesuaikan lebar",
+  "font.document": "Keluarga font dokumen",
+  "font.source": "Pertahankan font sumber",
+  "font.serif": "Serif",
+  "font.sans": "Tanpa serif",
+  "font.mono": "Monospasi",
+  "text.readability": "Periksa {count} sel tabel yang sempit dengan sumber asli."
 }

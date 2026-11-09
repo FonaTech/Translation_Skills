@@ -20,7 +20,7 @@ def median(xs,default):return statistics.median(xs) if xs else default
 def font_kind(s):return 'sans' if re.search(r'arial|helvetica|sans|calibri|gothic|黑体',s,re.I) else 'serif'
 def pdf_profile(path,selected_pages=None):
  import fitz
- d=fitz.open(path);pages=[];sizes=[];fonts=[];colors=[];content=[];images=0;tables=0;headings=0;columns=[];linegaps=[];rules=[]
+ d=fitz.open(path);pages=[];sizes=[];fonts=[];colors=[];colored_spans=[];content=[];images=0;tables=0;headings=0;columns=[];linegaps=[];rules=[]
  for pn,p in enumerate(d):
   if selected_pages and pn+1 not in selected_pages:continue
   texts=[];blocks=p.get_text('dict')['blocks'];spans=[]
@@ -31,9 +31,10 @@ def pdf_profile(path,selected_pages=None):
     ss=[s for s in line['spans'] if s['text'].strip()];spans+=ss
     for s in ss:
      sizes.extend([s['size']]*min(80,len(s['text'])));fonts.extend([s['font']]*min(80,len(s['text'])))
-     # Some PyMuPDF versions expose signed ARGB; compare the RGB channels.
+     # Normalize signed ARGB values exposed by some PyMuPDF versions.
      rgb=int(s['color'])&0xffffff
-     if rgb not in {0,16777215} and readable_accent(color(rgb),None):colors.extend([rgb]*min(30,len(s['text'])))
+     if rgb not in {0,16777215} and readable_accent(color(rgb),None):
+      colors.extend([rgb]*min(30,len(s['text'])));colored_spans.append(s)
     if len(b['lines'])>1:
      ys=[l['bbox'][1] for l in b['lines']];linegaps.extend(ys[i+1]-ys[i] for i in range(len(ys)-1) if 5<ys[i+1]-ys[i]<40)
   body=median([s['size'] for s in spans],11);hs=[s for s in spans if s['size']>body*1.35];headings+=len(hs)
@@ -55,7 +56,14 @@ def pdf_profile(path,selected_pages=None):
    bb=[min(x[0] for x in rects),min(x[1] for x in rects),max(x[2] for x in rects),max(x[3] for x in rects)];content.append(bb)
   else:bb=[w*.08,h*.08,w*.92,h*.92]
   pages.append({'page':pn+1,'width_pt':round(w,2),'height_pt':round(h,2),'columns':col,'native_chars':len(p.get_text().strip()),'images':len(p.get_image_info()),'content_bbox':list(bb),'horizontal_rules':rule})
- n=max(len(pages),1);body=median(sizes,11);w=median([p['width_pt'] for p in pages],595.3);h=median([p['height_pt'] for p in pages],841.9);chars=sum(p['native_chars'] for p in pages);native=sum(p['native_chars']>60 for p in pages)/n;bodyfont=Counter(fonts).most_common(1);accent=Counter(colors).most_common(1)
+ n=max(len(pages),1);body=median(sizes,11);w=median([p['width_pt'] for p in pages],595.3);h=median([p['height_pt'] for p in pages],841.9);chars=sum(p['native_chars'] for p in pages);native=sum(p['native_chars']>60 for p in pages)/n;bodyfont=Counter(fonts).most_common(1)
+ # Near-black body ink can dominate counts even when the source title has a
+ # clear colour. Prefer readable chromatic, title-sized spans over body ink.
+ heading_ink=[]
+ for s in colored_spans:
+  rgb=[(int(s['color'])>>shift)&255 for shift in (16,8,0)]
+  if s['size']>=body*1.18 and max(rgb)-min(rgb)>=32:heading_ink.extend([s['color']]*min(80,len(s['text'])))
+ accent=Counter(heading_ink or colors).most_common(1)
  left=median([b[0]/w for b in content],.075);right=median([(w-b[2])/w for b in content],.075);top=median([b[1]/h for b in content],.06)
  score=round(.20+.30*native+.15*bool(fonts)+.12*bool(content)+.10*(len(set(columns))<=2)+.08*(chars>100)+.05*bool(accent or sum(rules)),3)
  doc={'kind':'pdf','pages':pages,'native_text_fraction':native,'body_pt':round(body,2),'font':font_kind(bodyfont[0][0]) if bodyfont else 'serif','accent':color(accent[0][0]) if accent else '#304659','columns':max(Counter(columns),key=lambda x:(Counter(columns)[x],x)),'page_mm':[round(w*25.4/72,2),round(h*25.4/72,2)],'margin_x_mm':round(clamp(min(left,right)*w*25.4/72,10,30),1),'margin_y_mm':round(clamp(top*h*25.4/72,14,28),1),'line_height':round(clamp(median(linegaps,body*1.6)/max(body,1),1.45,1.95),2),'heading_ratio':round(clamp(max(sizes,default=body)/max(body,1),1.25,2.5),2),'heading_rule':sum(rules)>0,'feature_confidence':score,'features':{'text':native,'images':min(1,images/n*.25),'tables':tables/n,'headings':min(1,headings/n*.1),'columns':max(Counter(columns),key=lambda x:(Counter(columns)[x],x)),'landscape':int(w>h),'linebreaks':0},'evidence':['Native text/font geometry from all pages','Column estimate from repeated narrow-block left edges','Color and horizontal-rule signals; original font binaries not copied'],'limits':['Heuristic column detection; source reading order and figures still require page review','Scans/outlined text need visual profiling or explicit agent supplement','Unusual sidebars, merged cells and mixed page layouts may need structural repair']}
@@ -178,7 +186,21 @@ def plan(root,m,c,overrides=None):
   refprofile=profile(fp)
  for s in c['sources']:
   scope=s.get('selection_scope');selected_pages=scope.get('pages') if isinstance(scope,dict) else None
-  p=refprofile or profile(safe(root,s['file']),selected_pages);profiles[s['id']]=p;ranking=rank_templates(p.get('features',{}),conf.get('template') if conf.get('policy')=='template' else None);reason=[];route='source';design=source_design(p);rejection=valid_rejection(root,m,c,s['id']);selected=None
+  p=dict(refprofile or profile(safe(root,s['file']),selected_pages))
+  from structure_layout import read_map
+  parsed=read_map(root,s,c)
+  if parsed:
+   p['parser_layout']={'file':s['layout_ir']['file'],'sha256':s['layout_ir']['sha256'],'pages':parsed['pages'],'review_status':parsed['review_status']}
+   votes=Counter(page['columns'] for page in parsed['pages'] if page.get('columns'))
+   if votes and not refprofile:
+    proposed=votes.most_common(1)[0][0]
+    # One observed prose band is insufficient to erase independently measured
+    # multi-column geometry (e.g. a figure-heavy page with one paragraph per
+    # side). Two or three parser bands remain positive column evidence.
+    if proposed>1 or p.get('columns',1)==1:p['columns']=proposed
+    p['features']={**p['features'],'columns':p['columns']}
+   p['evidence']=p['evidence']+['Hash-bound parser output: ordered blocks, roles, typography, columns, figures and caption candidates; proposals require source review']
+  profiles[s['id']]=p;ranking=rank_templates(p.get('features',{}),conf.get('template') if conf.get('policy')=='template' else None);reason=[];route='source';design=source_design(p);rejection=valid_rejection(root,m,c,s['id']);selected=None
   if conf.get('policy','source-first')=='template':selected=conf.get('template') or ranking[0]['template'];reason.append('User explicitly requested template mode.')
   elif rejection:selected=ranking[0]['template'];reason.append('Severe visual defect remains after source-design adjustment; current visual review authorizes fallback: '+rejection['reason'])
   else:
@@ -189,12 +211,12 @@ def plan(root,m,c,overrides=None):
   override=conf.get('presentation',{}).get('documents',{}).get(s['id'],{})
   __import__('refinement').design_patch(override);design.update(override)
   allplans.append({'document_id':s['id'],'route':route,'design':design,'source_confidence':p['feature_confidence'],'threshold':threshold,'ranking':ranking,'reasons':reason,'fallback_review':rejection,'reference':reference['name'] if reference else s['name']})
- return {'schema_version':'1.0.1','snapshot':snap(m,c),'policy':conf.get('policy','source-first'),'decision_order':['profile source','render source','adjust source and rerender','visual review: severe and unadjustable?','rank fallback templates','render/adjust/review nearest compatible candidate'],'scores_are':'Heuristic feature/fit scores, not statistically calibrated probabilities or aesthetic correctness','profiles':profiles,'documents':allplans,'visual_review_required':True,'automatic_template_switching':False}
+ return {'schema_version':'1.0.2','snapshot':snap(m,c),'policy':conf.get('policy','source-first'),'decision_order':['profile source','render source','adjust source and rerender','visual review: severe and unadjustable?','rank fallback templates','render/adjust/review nearest compatible candidate'],'scores_are':'Heuristic feature/fit scores, not statistically calibrated probabilities or aesthetic correctness','profiles':profiles,'documents':allplans,'visual_review_required':True,'automatic_template_switching':False}
 
 def design_css(plan):
  out=[]
  for d in plan['documents']:
-  ident=d['document_id'];x=d['design'];w,h=x['page_mm'];mx=x['margin_x_mm'];my=x['margin_y_mm'];font='"Noto Sans","Arial Unicode MS","Arial",sans-serif' if x['font']=='sans' else '"Noto Serif","Noto Serif CJK SC","Songti SC","Noto Naskh Arabic","Times New Roman",serif';vars=f'--page-width:{w}mm;--page-height:{h}mm;--margin-x:{mx}mm;--margin-y:{my}mm;--body-size:{x["body_pt"]}pt;--body-leading:{x["line_height"]};--accent:{x["accent"]};--column-count:{x["columns"]};--heading-ratio:{x.get("heading_ratio",1.65)};font-family:{font};'
+  ident=d['document_id'];x=d['design'];w,h=x['page_mm'];mx=x['margin_x_mm'];my=x['margin_y_mm'];font={"sans":'"Noto Sans","Arial Unicode MS","Arial",sans-serif',"mono":'"Noto Sans Mono","Courier New",monospace',"serif":'"Noto Serif","Noto Serif CJK SC","Songti SC","Noto Naskh Arabic","Times New Roman",serif'}[x["font"]];vars=f'--page-width:{w}mm;--page-height:{h}mm;--margin-x:{mx}mm;--margin-y:{my}mm;--body-size:{x["body_pt"]}pt;--body-leading:{x["line_height"]};--accent:{x["accent"]};--column-count:{x["columns"]};--heading-ratio:{x.get("heading_ratio",1.65)};font-family:{font};'
   out.append('[data-layout-doc="'+ident+'"]{'+vars+'} @page layout-'+ident+'{size:'+str(w)+'mm '+str(h)+'mm;margin:0}.sheet[data-layout-doc="'+ident+'"]{page:layout-'+ident+'}')
   if d['route']=='source' and not x.get('heading_rule'):out.append('[data-layout-doc="'+ident+'"] h2{border-bottom:0}')
  return '\n'.join(out)

@@ -4,6 +4,7 @@ Detected regions are evidence for the invoking agent, not verified figures.
 No OCR, chart interpretation, text substitution or semantic review is inferred.
 """
 from pathlib import Path
+from contextlib import contextmanager
 import base64
 import re
 import xml.etree.ElementTree as ET
@@ -95,7 +96,55 @@ def normalize_pdf_rasters(page):
     return records
 
 
-def export_crop(page, bbox, stem, scale=2.5):
+@contextmanager
+def source_crop_page(page, native_text_exclusions=None, raster_xrefs=None):
+    """Remove only inspected adjoining native text in a temporary copy.
+
+    Image pixels and vector paths remain unchanged. This is never automatic
+    label removal: each rectangle requires an observation and source evidence.
+    """
+    import fitz
+    exclusions=native_text_exclusions or []
+    if not exclusions and raster_xrefs is None:
+        yield page
+        return
+    if not isinstance(exclusions,list):raise ValueError('Native text exclusions require a list.')
+    for item in exclusions:
+        if not isinstance(item,dict) or set(item)!={'bbox','reason','evidence'} or not all(isinstance(item[k],str) and item[k].strip() for k in ('reason','evidence')):
+            raise ValueError('Each native text exclusion needs bbox, reason and inspected evidence.')
+        box=fitz.Rect(item['bbox'])
+        if box.is_empty or box.is_infinite or not page.rect.contains(box):raise ValueError('Invalid native text exclusion bounds.')
+    with fitz.open() as temporary:
+        temporary.insert_pdf(page.parent,from_page=page.number,to_page=page.number)
+        reviewed=temporary[0]
+        if raster_xrefs is not None:
+            # Xrefs change during insert_pdf. Map by the source image digest,
+            # never by insertion order or a document-specific object number.
+            allowed=set(raster_xrefs)
+            known={x[0] for x in page.get_images(full=True)}
+            if not allowed or not allowed<=known:raise ValueError('Unknown owned raster identity.')
+            def pixels(doc,xref):
+                import hashlib
+                p=fitz.Pixmap(doc,xref)
+                return (p.width,p.height,p.n,hashlib.sha256(p.samples).hexdigest())
+            keep={pixels(page.parent,x) for x in allowed}
+            for item in reviewed.get_images(full=True):
+                if pixels(temporary,item[0]) not in keep:reviewed.delete_image(item[0])
+        for item in exclusions:reviewed.add_redact_annot(fitz.Rect(item['bbox']),fill=False,cross_out=False)
+        reviewed.apply_redactions(images=0,graphics=0,text=0)
+        yield reviewed
+
+
+def export_crop(page, bbox, stem, scale=2.5, native_text_exclusions=None, raster_xrefs=None):
+    with source_crop_page(page,native_text_exclusions,raster_xrefs) as reviewed:
+        result=_export_crop(reviewed,bbox,stem,scale)
+    result['metadata']['source_page']=page.number+1
+    if native_text_exclusions:result['metadata']['native_text_exclusions']=native_text_exclusions
+    if raster_xrefs is not None:result['metadata']['raster_xrefs']=raster_xrefs
+    return result
+
+
+def _export_crop(page, bbox, stem, scale=2.5):
     """Keep drawing paths in SVG and provide a separate raster export route."""
     import fitz
     stem = Path(stem)
@@ -130,6 +179,55 @@ def export_crop(page, bbox, stem, scale=2.5):
             'limits': 'Font outlines are preserved graphics, not editable or automatically translated text.'}}
     finally:
         temporary.close()
+
+
+def visible_rasters(page):
+    """Intersect image transforms with the renderer's active clip stack.
+
+    A PDF image transform includes pixels hidden by clipping. Bounding boxes
+    from get_image_info alone therefore cannot establish visible figure edges.
+    Unsupported runtimes return explicit, review-required footprint evidence.
+    """
+    import fitz
+    infos=page.get_image_info(xrefs=True)
+    masks={x[0]:x[1] for x in page.get_images(full=True)}
+    warnings=[]
+    try:
+        m=fitz.mupdf
+        class ImageClips(m.FzDevice2):
+            def __init__(self):
+                super().__init__();self.rows=[]
+                for name in ['fill_image','clip_path','clip_stroke_path','clip_image_mask','pop_clip']:
+                    getattr(self,'use_virtual_'+name)()
+            def fill_image(self,ctx,image,ctm,alpha,params):
+                r=m.fz_transform_rect(m.FzRect(0,0,1,1),m.FzMatrix(ctm))
+                s=self.fz_device_current_scissor()
+                self.rows.append({'transform_bbox':[r.x0,r.y0,r.x1,r.y1],
+                    'clip_bbox':[s.x0,s.y0,s.x1,s.y1],'opacity':alpha})
+            def clip_path(self,*args):pass
+            def clip_stroke_path(self,*args):pass
+            def clip_image_mask(self,*args):pass
+            def pop_clip(self,*args):pass
+        dev=ImageClips()
+        m.fz_run_page(page.this,dev,m.FzMatrix(),m.FzCookie());m.fz_close_device(dev)
+        rows=dev.rows;method='renderer-active-clip-stack'
+    except (AttributeError,RuntimeError,TypeError) as error:
+        rows=[{'transform_bbox':list(x['bbox']),'clip_bbox':list(page.rect),'opacity':1} for x in infos]
+        warnings.append('Active clip tracing unavailable: '+str(error));method='unverified-image-footprints'
+    regions=[]
+    for row in rows:
+        original=fitz.Rect(row['transform_bbox']);box=original & fitz.Rect(row['clip_bbox']) & page.rect
+        info=min(infos,key=lambda x:sum(abs(a-b) for a,b in zip(original,x['bbox'])),default={})
+        xref=info.get('xref',0);mask=masks.get(xref)
+        invisible=row['opacity']<=0
+        if mask:
+            try:invisible=invisible or not any(fitz.Pixmap(page.parent,mask).samples)
+            except RuntimeError:warnings.append('Soft-mask visibility requires review for image '+str(xref))
+        if invisible or box.is_empty or box.is_infinite:continue
+        regions.append({**row,'bbox':list(box),'xref':xref,'soft_mask':bool(mask),
+            'clipped':sum(abs(a-b) for a,b in zip(original,box))>.1,'review_required':True})
+    return {'regions':regions,'method':method,'warnings':warnings,
+        'limits':'Scissor bounds enclose nonrectangular clips; image content and caption ownership still need source inspection.'}
 
 
 def inventory(page):

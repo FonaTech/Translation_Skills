@@ -42,6 +42,15 @@
           },
           "note": {
             "type": "string"
+          },
+          "replace_notes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Explicit replacement of this target language’s translator notes. Other languages remain intact. Use [] to remove stale notes after source review; never removes source content."
           }
         },
         "additionalProperties": true

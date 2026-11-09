@@ -165,11 +165,11 @@
   "msg.span": "全幅設定を変更しました。プレビューを確認してください",
   "msg.recovered": "ブラウザーの一時保存から復元しました",
   "err.project": "有効な文書セクションがありません",
-  "err.fileSize": "ファイルが 45 MB を超えています。分割してください",
+  "err.fileSize": "ファイルが 256 MB を超えています。分割してください",
   "err.textChanged": "調整で本文が変わったため元に戻しました",
   "err.imageSize": "画像が 15 MB を超えています。圧縮してください",
   "err.imageType": "自己完結型の静的 SVG、PNG、JPEG、GIF、WebP を使用してください",
-  "err.htmlSize": "HTML が無効か、50 MB を超えています",
+  "err.htmlSize": "HTML が無効か、256 MB を超えています",
   "prompt.rows": "行数（見出し行を含む）",
   "prompt.cols": "列数",
   "prompt.link": "リンク先（https / http / mailto）",
@@ -287,5 +287,11 @@
   "diag.row": "表の行が本文領域を超えています。手動分割してください",
   "diag.header": "表の見出しが本文領域を超えています",
   "mobile.settings": "レイアウト設定の表示切替",
-  "zoom.fit": "幅に合わせる"
+  "zoom.fit": "幅に合わせる",
+  "font.document": "文書のフォント",
+  "font.source": "元のフォントを保持",
+  "font.serif": "明朝体",
+  "font.sans": "ゴシック体",
+  "font.mono": "等幅",
+  "text.readability": "幅の狭い表セル {count} 個を原文と照合してください。"
 }

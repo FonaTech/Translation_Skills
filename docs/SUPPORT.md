@@ -8,8 +8,8 @@ The CLI extracts source material into a common content model. The model in the c
 
 | Input | Extraction route | What to inspect |
 |---|---|---|
-| Native PDF | Text blocks, page previews and image crops; optional tables | Column order, hidden text, formulas, tables and vector figures |
-| Scanned PDF or raster image | Page previews and local Tesseract/macOS Vision OCR | Every recognized passage, names, quantities and unreadable regions |
+| Native PDF | Model-proposed roles/links/regions, native text evidence, page previews and figure crops; optional native tables | Column order, hidden text, formulas, tables and vector figures |
+| Scanned PDF or raster image | Page previews, local OCR or checked source-bound transcription | Every recognized passage, names, quantities and unreadable regions |
 | DOCX | OOXML paragraphs, tables, media, notes, headers and footers | Numbering, fields, text boxes, equations, anchors and merged cells |
 | Static HTML | Visible text and structure; source scripts are ignored | Images, hidden content and tables; complex tables may be flattened |
 | Markdown or UTF-8 text | Paragraphs and heading hints | Code fences, lists and other structure needing repair |
@@ -23,6 +23,12 @@ The CLI extracts source material into a common content model. The model in the c
 Spreadsheet formulas are never evaluated. PowerPoint and spreadsheet inputs produce reading editions. They do not become a reconstructed slide deck or a recalculated workbook.
 
 Encrypted PDFs need an authorized password. OCR engines, converters and their language packs are installed separately. Conversion records include source and intermediate hashes.
+
+## PDF structure and font maps
+
+Default PDF ingestion uses an offline model to propose roles, paragraph links and reading regions. `--structure native` retains the native extraction route. `--tables` in auto mode selects native cell extraction. Figure and table classifications, captions, columns and formulas remain reviewable proposals.
+
+Systematically garbled text on a readable page may indicate a missing font map. The optional FontTools helper supports a restricted set of Identity-H/CIDFontType2 fonts and writes a new PDF. It retains existing maps and records ambiguous glyph decisions. See [font-map recovery](../skills/document-translation/references/font-map-recovery.md) and the [source model card](../skills/document-translation/assets/models/SOURCE_STRUCTURE_MODEL_CARD.md).
 
 ## Generated documents
 
@@ -51,7 +57,7 @@ Target-language tags and text direction are configurable. Translation fluency co
 
 The reader and editor offer 16 interface languages: English, Simplified Chinese, Traditional Chinese, Japanese, Spanish, Arabic, German, French, Portuguese, Italian, Russian, Korean, Hindi, Indonesian, Vietnamese and Turkish. Browser language preferences determine the initial selection, with English as fallback. A saved manual choice takes precedence. Interface changes preserve the document's text, language, direction and print layout.
 
-The included document examples cover five target languages. Locale regression scripts exercise Chromium desktop/mobile emulation; they do not establish compatibility with every browser or operating system.
+Locale regression scripts exercise Chromium desktop/mobile emulation; they do not establish compatibility with every browser or operating system. Translation quality needs source-based review for the selected language.
 
 ## Figures and source comparison
 
@@ -65,6 +71,6 @@ Alignment uses stable IDs and source locations. One original sentence may corres
 
 Extraction review covers the selected source content. Semantic review compares every unit with both editions. Visual review compares source previews with all delivered PDF pages. The release command checks coverage, unresolved issues and evidence freshness.
 
-The current `review_evidence.py --kind visual` helper gathers source images from PDF previews. A project with no PDF source previews cannot complete this helper's visual checklist. For mixed-source projects, the generated checklist also needs additional native-source visual evidence. Extraction support for a format should not be read as a claim that its full release path has been verified.
+The visual checklist includes PDF page previews, available non-PDF previews or native source-file references. Compare non-PDF sources in their native reader when layout matters. A source hash identifies the file but does not establish that its layout was inspected.
 
 Automated bounds, number, hash and image checks help locate problems. They cannot establish translation accuracy or prove that someone inspected a page. Unreadable text stays unresolved. Domain examples are fictional translation exercises; consequential documents may also need a qualified domain reviewer.

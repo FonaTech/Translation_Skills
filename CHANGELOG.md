@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.2 — 2026-11-09
+
+### Translation workflow
+
+- Added a resumable workflow controller for source review, translation, rendering and evidence-backed delivery.
+- Added checked source-review operations and source-bound page/table transcription.
+- Preserved contributor IDs and locations when joining verified source fragments; refreshed parser layout maps after corrections.
+- Added offline PDF structure proposals and retained an explicit native extraction route.
+- Added optional recovery for supported missing PDF Unicode font maps, writing a separate repaired copy.
+
+### Figures, layout and editor
+
+- Added automatic figure crops with native text, font, coordinate and caption evidence.
+- Improved multipart figures, caption boundaries, waveform/table distinctions and bibliography continuations.
+- Fixed balanced-column height serialization that could create extra print columns or shrink PDF pages.
+- Improved column geometry, short-table/heading placement, editorial notes and source-relative figure comparisons.
+- Improved image handling in editor exports and made stale publishing artifacts trigger rebuilding.
+- Updated macOS Vision OCR configuration and retained source-reviewed transcription when local OCR is unavailable.
+- Retained signed PyMuPDF color normalization from 1.0.1.
+
+### Distribution
+
+- Removed generated demonstrations and outdated validation snapshots from the package.
+- Kept only public skill resources, model assets, documentation, development tools and tests.
+- Updated version metadata and the public-inventory checks used by checksums and release packaging.
+
 ## 1.0.1 — 2026-11-05
 
 ### Reader and editor

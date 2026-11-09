@@ -165,11 +165,11 @@
   "msg.span": "Larghezza intera modificata; controllare l’anteprima",
   "msg.recovered": "Progetto salvato in questo browser ripristinato",
   "err.project": "Il progetto non contiene sezioni di documento valide",
-  "err.fileSize": "File oltre 45 MB; dividerlo in sezioni",
+  "err.fileSize": "File oltre 256 MB; dividerlo in sezioni",
   "err.textChanged": "L’adattamento ha modificato il testo; modifiche annullate",
   "err.imageSize": "Immagine oltre 15 MB; comprimerla prima dell’inserimento",
   "err.imageType": "Usare SVG statico autonomo, PNG, JPEG, GIF o WebP",
-  "err.htmlSize": "HTML non valido o contenuto oltre 50 MB",
+  "err.htmlSize": "HTML non valido o contenuto oltre 256 MB",
   "prompt.rows": "Righe, inclusa l’intestazione",
   "prompt.cols": "Colonne",
   "prompt.link": "Indirizzo del collegamento (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "La riga della tabella supera l’area del contenuto; dividerla manualmente",
   "diag.header": "L’intestazione della tabella supera l’area del contenuto",
   "mobile.settings": "Mostra / nascondi impostazioni di impaginazione",
-  "zoom.fit": "Adatta alla larghezza"
+  "zoom.fit": "Adatta alla larghezza",
+  "font.document": "Famiglia di caratteri del documento",
+  "font.source": "Mantieni i caratteri originali",
+  "font.serif": "Con grazie",
+  "font.sans": "Senza grazie",
+  "font.mono": "Monospazio",
+  "text.readability": "Confronta {count} celle strette della tabella con la fonte."
 }

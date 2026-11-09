@@ -165,11 +165,11 @@
   "msg.span": "已切换通栏设置，请预览检查",
   "msg.recovered": "已恢复此浏览器暂存；原文件不受影响",
   "err.project": "工程缺少有效的文档章节",
-  "err.fileSize": "文件超过 45 MB，请按章节拆分后打开",
+  "err.fileSize": "文件超过 256 MB，请按章节拆分后打开",
   "err.textChanged": "自动整理改变了文字，已回滚",
   "err.imageSize": "图片超过 15 MB，请压缩后再插入",
   "err.imageType": "仅支持自包含静态 SVG 或 PNG / JPEG / GIF / WebP",
-  "err.htmlSize": "输入 HTML 无效或超过 50 MB",
+  "err.htmlSize": "输入 HTML 无效或超过 256 MB",
   "prompt.rows": "行数（含表头）",
   "prompt.cols": "列数",
   "prompt.link": "链接地址（https / http / mailto）",
@@ -287,5 +287,11 @@
   "diag.row": "表格行超出版心，请手动拆分",
   "diag.header": "表头超出版心",
   "mobile.settings": "显示 / 隐藏版式设置",
-  "zoom.fit": "适合宽度"
+  "zoom.fit": "适合宽度",
+  "font.document": "文档字体族",
+  "font.source": "保留原文档字体",
+  "font.serif": "衬线字体",
+  "font.sans": "无衬线字体",
+  "font.mono": "等宽字体",
+  "text.readability": "有 {count} 个表格单元格过窄，请对照原文检查。"
 }

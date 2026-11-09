@@ -165,11 +165,11 @@
   "msg.span": "Full-width setting changed; inspect the preview",
   "msg.recovered": "Restored this browser's saved project",
   "err.project": "The project has no valid document sections",
-  "err.fileSize": "File exceeds 45 MB; split it into sections",
+  "err.fileSize": "File exceeds 256 MB; split it into sections",
   "err.textChanged": "Refinement changed the text; changes were rolled back",
   "err.imageSize": "Image exceeds 15 MB; compress it before inserting",
   "err.imageType": "Use self-contained static SVG, PNG, JPEG, GIF or WebP",
-  "err.htmlSize": "Invalid HTML or input exceeds 50 MB",
+  "err.htmlSize": "Invalid HTML or input exceeds 256 MB",
   "prompt.rows": "Rows, including header",
   "prompt.cols": "Columns",
   "prompt.link": "Link address (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Table row exceeds the content area; split it manually",
   "diag.header": "Table header exceeds the content area",
   "mobile.settings": "Show / hide layout settings",
-  "zoom.fit": "Fit width"
+  "zoom.fit": "Fit width",
+  "font.document": "Document font family",
+  "font.source": "Preserve source fonts",
+  "font.serif": "Serif",
+  "font.sans": "Sans serif",
+  "font.mono": "Monospace",
+  "text.readability": "Inspect {count} narrow table cells against the source."
 }

@@ -1,27 +1,15 @@
 # Review and release
 
-Review extraction, translation meaning and rendered pages before packaging a project. Keep unreadable or ambiguous content attached to its source location.
+Evidence-based stages: selected, extracted, translated, checked, built, visually reviewed, released. Unreadable content stays unresolved.
 
-## Extraction
+Extraction review covers all selected pages, ordering, running furniture, cells, crops and low-text warnings. Semantic review compares every original with both versions: omissions/additions, scope, modality, negation, numbers/signs/units/ranges, denominator/population, caveats, attribution, names, terms and references. Record legitimate localization differences. Do not auto-correct number warnings.
 
-Compare every selected source block with the extraction. Check reading order, repeated headers and footers, table cells, figure crops, formulas and low-text warnings. A selected excerpt is valid when its exact scope and full source page count are recorded.
+Mechanical audit checks IDs, source hashes, language completeness, row references, asset paths and manifest. Missing translations block release. Keep unresolved OCR/table/vector issues with locators. A selected excerpt is valid if labeled with full source count and exact scope; never call it a full translation.
 
-## Meaning
+Render all pages; inspect contacts and difficult full pages for invisible glyphs, clipped figures/tables, orphan headings, footers, blank pages and HTML/PDF parity. Visual review binds current artifact hashes. Release needs fresh full-scope extraction/semantic/visual records plus machine/layout checks. A review record is not a semantic guarantee.
 
-Compare each source unit with both editions. Look for omissions, additions, changed scope, modality, negation, numbers, units, conditions, uncertainty and attribution. Explain legitimate localization differences and number warnings rather than changing text simply to clear the audit.
+Hand off formats, alignment, coverage and actual limits. Agent review is not human/certified/expert review. Tests cover fixtures, not universal performance. Do not publish or mutate global installation without instruction.
 
-## Rendered pages
+Prepare blank, snapshot-bound checklists with `scripts/review_evidence.py`. The invoking model must fill per-block extraction observations, both-edition observations for each unit, and per-page visual findings after opening source and rendered images. Release rejects a placeholder, count-only attestation or stale evidence. Do not infer universal certification from examples.
 
-Open source previews and every delivered PDF page. Check visible glyphs, figure details, table continuation, headings, footers, page edges and HTML/PDF consistency. Inspect the source crops and final figure placements alongside `reports/asset-fidelity.json`.
-
-Build/render compare retained-original PDF graphics with source crops and check PNG compatibility fallbacks. Missing, stale or failing figure evidence prevents release. Intentionally translated graphics and non-PDF sources still need native-source comparison.
-
-## Record the findings
-
-Prepare blank checklists with `scripts/review_evidence.py`. Fill block-level extraction observations, observations for both editions of every unit, and source/output page observations after inspection. Record them with `translate.py review --evidence FILE`.
-
-The visual helper currently gathers source images from PDF previews. Non-PDF sources need additional native-source visual evidence; projects without PDF previews cannot complete the current helper. Report this limitation when it prevents release.
-
-Release checks require current extraction, semantic and visual records, complete translations/alignment, resolved source issues and current layout/asset reports. Content changes invalidate review snapshots; changed outputs invalidate visual evidence. Checklist completeness establishes recorded coverage, not translation accuracy.
-
-Deliver the requested files with the selected scope, reviewer identity and unresolved limits. Publication or upload requires user authorization.
+Figure appearance evidence is mandatory and hash-bound in reports/asset-fidelity.json. Build/render compare PDF-bound retained-original graphics in the actual browser against source RGB crops; both the SVG/main asset and PNG compatibility route must pass. Release rejects missing/stale/failing coverage. Inspect final figure crops and output pages; intentional label edits and non-PDF sources retain explicit native visual-review requirements. A source-relative metric does not prove extraction completeness or translated labels.

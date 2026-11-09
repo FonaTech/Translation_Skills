@@ -1,9 +1,5 @@
 # Technical documents and code
 
-Review focus: Identifiers, zero values and negation.
+Keep code identifiers, commands, parameter names and literal values traceable to the source. Preserve the meaning of zero, blank, null and N/A where they differ. Translate explanations while checking negation, prerequisites and version conditions.
 
-Read the `software` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
-
-Keep `timeout_ms`, `1500`, `0` and `user_id` unchanged. Here, zero disables the timeout; it does not request an immediate retry. Translate the explanation while preserving code identifiers.
-
-Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.
+Use these checks on the selected source material and both complete editions.

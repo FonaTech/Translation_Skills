@@ -19,6 +19,18 @@ class VectorTests(unittest.TestCase):
    _,m,c=t.project(r);c['sources']=[{'id':'D001','name':'source.pdf','file':'sources/D001.pdf','sha256':t.sha(source)}];t.write(r/'content.json',c)
    with contextlib.redirect_stdout(io.StringIO()):t.crop(argparse.Namespace(project=str(r),document='D001',page=1,bbox='40,40,340,280',kind='image',width=150,caption='',format='auto'))
    _,m,c=t.project(r);b=c['blocks'][0];self.assertTrue(b['asset'].endswith('.svg'));self.assertGreater(b['vector']['svg_paths'],0);self.assertEqual(b['label_policy'],'unreviewed');html=publishing.block_html(r,b,'zh-Hans','faithful',publishing.LABELS['zh']);self.assertIn('data:image/svg+xml;base64,',html);self.assertIn('data-raster-fallback="data:image/png;base64,',html);(r/b['asset_fallback']).write_bytes(b'changed');self.assertIn('asset-fallback-hash',[e['code'] for e in t.audit_data(r,m,c)['errors']])
+ def test_crop_defaults_to_source_width_and_relative_span(self):
+  import fitz
+  with tempfile.TemporaryDirectory() as folder:
+   r=Path(folder)/'project'
+   with contextlib.redirect_stdout(io.StringIO()):t.init(argparse.Namespace(project=str(r),title='Source scale',languages='zh-Hans',style='editorial',page_size='A4',columns=2))
+   d=fitz.open();d.new_page(width=600,height=500);source=r/'sources/D001.pdf';d.save(source);d.close()
+   _,_,c=t.project(r);c['sources']=[{'id':'D001','name':'source.pdf','file':'sources/D001.pdf','sha256':t.sha(source)}];t.write(r/'content.json',c)
+   for bbox,width,expected_width,span in [('50,50,250,200',None,70.56,'column'),('50,50,450,200',None,141.11,'all'),('50,50,250,200',90,90,'column')]:
+    with self.subTest(bbox=bbox,width=width):
+     with contextlib.redirect_stdout(io.StringIO()):t.crop(argparse.Namespace(project=str(r),document='D001',page=1,bbox=bbox,kind='image',width=width,caption='',format='png'))
+     _,_,content=t.project(r);b=content['blocks'][-1]
+     self.assertEqual(b['width_mm'],expected_width);self.assertEqual(b['presentation']['span'],span)
  def test_rotated_crop_declines(self):
   import fitz
   d=fitz.open();p=d.new_page(width=400,height=300);p.draw_line((10,10),(100,100));p.set_rotation(90)

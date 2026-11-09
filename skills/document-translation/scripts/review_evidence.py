@@ -6,7 +6,7 @@ from refinement import check_manifest
 
 def create(project_path,kind,output):
  import layout_engine
- r,m,c=project(project_path);record={'schema_version':'1.0.1','kind':kind,'snapshot':snap(m,c),'reviewer':'','summary':'Complete after inspecting every enumerated item; this checklist is not itself evidence.','findings':[]}
+ r,m,c=project(project_path);record={'schema_version':'1.0.2','kind':kind,'snapshot':snap(m,c),'reviewer':'','summary':'Complete after inspecting every enumerated item; this checklist is not itself evidence.','findings':[]}
  if kind=='semantic':
   record['editions']=list(m['editions']);record['unit_reviews']=[{'unit_id':u['id'],'faithful':'pending','interpretive':'pending','observation':''} for _,u in units(c)]
  elif kind=='extraction':
@@ -29,12 +29,17 @@ def create(project_path,kind,output):
      selected.update(page.get('source_pages',[]))
     # Explicit project scope is authoritative; full source can be lengthy.
     scope=source.get('selection_scope')
-    numbers=scope.get('pages',[]) if isinstance(scope,dict) else sorted(int(x) for x in selected if str(x).isdigit())
+    numbers=scope.get('pages',[]) if isinstance(scope,dict) else list(range(1,int(source.get('page_count') or 0)+1))
     for n in numbers:
      rel=f'previews/{source["id"]}-p{int(n):04d}.png';img=safe(r,rel)
      if not img.exists():raise ValueError('Missing source preview; inspect/recreate '+rel)
      record['source_evidence'].append({'file':rel,'page':int(n),'sha256':sha(img),'observation':''})
-  if not record['source_evidence']:raise ValueError('Visual review requires project-local source page previews.')
+   else:
+    previews=sorted((r/'previews').glob(source['id']+'-*.png'))
+    if previews:
+     for img in previews:record['source_evidence'].append({'file':img.relative_to(r).as_posix(),'sha256':sha(img),'observation':''})
+    else:record['source_evidence'].append({'file':source['file'],'sha256':sha(fp),'comparison':'native source structure/content; inspect in its native reader when layout is material','observation':''})
+  if not record['source_evidence']:raise ValueError('Visual review requires project-local source evidence.')
  path=Path(output);write(path,record)
  count=len(record.get('unit_reviews',record.get('block_reviews',record.get('pages',[]))))
  print(f'Checklist created with {count} entries. Fill it only after actual inspection: {path}')

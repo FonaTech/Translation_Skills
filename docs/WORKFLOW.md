@@ -2,6 +2,14 @@
 
 The client model supplies the translations. The commands below extract and organize text, exchange translation packets, produce documents and record review. Run them from the repository root, using the Python environment prepared during [installation](INSTALL.md).
 
+After ingestion, the resumable controller reports the next task:
+
+```bash
+python3 skills/document-translation/scripts/translate.py workflow /path/to/translation-project --advance --browser /path/to/chromium
+```
+
+The client model performs source review, translation and page inspection, then resumes the controller. Deterministic build/render stages run when their inputs are ready. The [agent exchange contract](../skills/document-translation/references/agent-workflow.md) defines the source-review packets and workflow stages. The steps below also explain the individual commands.
+
 ## 1. Select the files
 
 Start with the paths supplied by the user. Confirm the target language, intended reader, file order and any page selection. When a document is named without a path, search within the authorized folder:
@@ -21,6 +29,8 @@ python3 skills/document-translation/scripts/translate.py init /path/to/translati
 python3 skills/document-translation/scripts/translate.py ingest /path/to/translation-project /path/to/source.pdf /path/to/appendix.docx --order auto
 ```
 
+PDFs use the bundled structure model to propose roles, paragraph links and regions. Use `--structure native` for native extraction. In default auto mode, `--tables` selects native cell extraction; combining explicit `--structure ml` with `--tables` is rejected. Inspect both routes against the source.
+
 Files are ingested in command-line order. `--languages zh-Hans,fr` creates a project with two target languages. Use a separate project for a different source selection.
 
 Read `project.json`, `content.json`, `reports/extraction.json` and the source page previews. Correct column order, tables, repeated headers, formulas and missing regions against the source before translating. `content.json` is the editable content model used by later commands.
@@ -39,7 +49,7 @@ For scans, choose an available local OCR engine:
 python3 skills/document-translation/scripts/translate.py ocr /path/to/translation-project --document D001 --pages 1-2 --engine tesseract --languages eng
 ```
 
-On macOS, the alternative is `--engine vision --languages en-US`. Check recognized text against the visible page; record unreadable regions. See [extraction and OCR](../skills/document-translation/references/extraction-and-ocr.md) for crops, formulas and reading-order details.
+On macOS, the alternative is `--engine vision --languages en-US`. Check recognized text against the visible page; record unreadable regions. The source-review exchange also accepts page/table transcription tied to inspected source evidence. Readable pages with damaged text maps may use the optional [font-map recovery tool](../skills/document-translation/references/font-map-recovery.md). See [extraction and OCR](../skills/document-translation/references/extraction-and-ocr.md) for crops, formulas and reading-order details.
 
 ## 3. Translate the packets
 
@@ -91,7 +101,7 @@ python3 skills/document-translation/scripts/review_evidence.py /path/to/translat
 
 Fill the reviewer, summary and each listed observation after inspecting the relevant material. Extraction review covers every block. Semantic review covers both translations of every unit. Visual review covers source previews and every delivered PDF page. Keep unresolved findings attached to their locations.
 
-The current visual-checklist helper requires project-local PDF source previews. For a project containing only non-PDF sources, this step stops without them. Native-source visual evidence needs additional preparation; do not claim that such a project passed the complete release workflow. See [review limits](SUPPORT.md#review-and-release).
+For non-PDF sources, the checklist includes available previews or the native source file. Inspect it in its native reader when layout matters. Source-file hashes establish identity; they do not replace inspection.
 
 Record the completed checklists:
 

@@ -14,10 +14,10 @@ def build():
     model = ASSETS / 'layout-model.js'
     data = {
         'EDITOR_CSS': (e / 'editor.css').read_text(),
-        'CATALOG': 'const CATALOG=' + json.dumps(json.loads((ASSETS / 'layout-catalog.json').read_text())['presets'], ensure_ascii=False) + '; const FAMILY_CSS=' + json.dumps((ASSETS / 'families.css').read_text(), ensure_ascii=False) + '; const MIT_TEXT=' + json.dumps((ROOT / 'LICENSE').read_text()) + ';',
+        'CATALOG': 'const CONTENT_CSS=' + json.dumps((ASSETS / 'document-content.css').read_text()) + ';' + 'const CATALOG=' + json.dumps(json.loads((ASSETS / 'layout-catalog.json').read_text())['presets'], ensure_ascii=False) + '; const FAMILY_CSS=' + json.dumps((ASSETS / 'families.css').read_text(), ensure_ascii=False) + '; const MIT_TEXT=' + json.dumps((ROOT / 'LICENSE').read_text()) + ';',
         'I18N': 'const EDITOR_LOCALES=' + json.dumps({p.stem:json.loads(p.read_text()) for p in sorted((e/'locales').glob('*.json'))},ensure_ascii=False) + ';const EDITOR_ERROR_KEYS=' + (e/'error-keys.json').read_text() + ';\n' + (e/'i18n.js').read_text(),
         'ARCHIVE': (e / 'archive.js').read_text(),
-        'FORMATS': (e / 'svg.js').read_text() + '\n' + (e / 'formats.js').read_text(),
+        'FORMATS': (e / 'svg.js').read_text() + '\n' + (e / 'asset-bundle.js').read_text() + '\n' + (e / 'formats.js').read_text(),
         'MODEL': (model.read_text() if model.exists() else '') + '\n' + (ASSETS / 'layout-planner.js').read_text(),
         'LAYOUT': (ASSETS / 'layout-runtime.js').read_text(),
         'APP': (e / 'app.js').read_text(),

@@ -1,7 +1,0 @@
-﻿unit_id,document_id,page_or_element,source,faithful,interpretive,review_notes
-D001-B00001-U0001,D001,1,Give form to the requester. Do not send to the IRS.,将此表交给索取表格的一方。不要寄送给美国国税局（IRS）。,这份表应交给向你索取表格的人或机构；不要把它寄给 IRS。,[]
-D001-B00002-U0001,D001,1,Print or type.,请用印刷体书写或打字填写。,填写时，请使用印刷体书写，或打字输入。,[]
-D001-B00003-U0001,D001,1,See Specific Instructions on page 3.,请参阅第 3 页的具体说明。,具体填写要求见第 3 页。,[]
-D001-B00004-U0001,D001,1,"Business name/disregarded entity name, if different from above.",企业名称／税务上不被视为独立实体的实体名称（如与上文不同）。,如果企业或税务上不被视为独立实体的实体，其名称与上文填写的名称不同，请填写该名称。,[]
-D001-B00005-U0001,D001,1,Requester’s name and address (optional),索取表格一方的姓名或名称及地址（选填）,可选择填写索取表格的人或机构的姓名或名称及地址。,[]
-D001-B00006-U0001,D001,1,List account number(s) here (optional),在此列出账户号码（选填）,如需填写账户号码，可列在这里；此项为选填。,[]

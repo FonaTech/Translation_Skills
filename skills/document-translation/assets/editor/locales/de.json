@@ -165,11 +165,11 @@
   "msg.span": "Einstellung für volle Breite geändert; Vorschau prüfen",
   "msg.recovered": "Das in diesem Browser gespeicherte Projekt wiederhergestellt",
   "err.project": "Das Projekt enthält keine gültigen Dokumentabschnitte",
-  "err.fileSize": "Datei größer als 45 MB; in Abschnitte aufteilen",
+  "err.fileSize": "Datei größer als 256 MB; in Abschnitte aufteilen",
   "err.textChanged": "Die Anpassung hat Text verändert; Änderungen wurden zurückgenommen",
   "err.imageSize": "Bild größer als 15 MB; vor dem Einfügen komprimieren",
   "err.imageType": "Eigenständiges statisches SVG, PNG, JPEG, GIF oder WebP verwenden",
-  "err.htmlSize": "Ungültiges HTML oder Eingabe größer als 50 MB",
+  "err.htmlSize": "Ungültiges HTML oder Eingabe größer als 256 MB",
   "prompt.rows": "Zeilen einschließlich Kopfzeile",
   "prompt.cols": "Spalten",
   "prompt.link": "Linkadresse (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Tabellenzeile überschreitet den Inhaltsbereich; manuell aufteilen",
   "diag.header": "Tabellenkopf überschreitet den Inhaltsbereich",
   "mobile.settings": "Layouteinstellungen ein- / ausblenden",
-  "zoom.fit": "An Breite anpassen"
+  "zoom.fit": "An Breite anpassen",
+  "font.document": "Dokumentschrift",
+  "font.source": "Quellschriften beibehalten",
+  "font.serif": "Serifenschrift",
+  "font.sans": "Serifenlose Schrift",
+  "font.mono": "Festbreitenschrift",
+  "text.readability": "{count} schmale Tabellenzellen mit der Quelle vergleichen."
 }

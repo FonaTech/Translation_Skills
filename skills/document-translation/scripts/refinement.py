@@ -2,7 +2,7 @@
 import copy
 from translate import project,read,write,safe,sha,snap,source_snap,now,units
 NUMERIC={'columns':(1,3),'body_pt':(8,24),'line_height':(1.15,2.5),'margin_x_mm':(6,50),'margin_y_mm':(8,50),'column_gap_mm':(3,20),'paragraph_gap_mm':(.5,10),'heading_gap_mm':(1,15),'table_pt':(6,18),'cell_padding_mm':(.3,5),'title_pt':(12,40),'caption_pt':(6,18),'heading_ratio':(1.1,3)}
-ROLES={'body','metadata','abstract','keywords','caption','equation','note'}
+ROLES={'body','metadata','bibliography','abstract','keywords','caption','equation','note'}
 def design_patch(p):
  if not isinstance(p,dict):raise ValueError('Presentation override must be an object.')
  for k,v in p.items():
@@ -32,7 +32,7 @@ def validate_blocks(c):
   for cid in refs:
    cb=lookup.get(cid)
    if cb is None or cb['type'] not in {'paragraph','heading'} or cb.get('caption_block_ids') or cb['source']['document_id']!=b['source']['document_id'] or (cb['source'].get('page') and b['source'].get('page') and cb['source']['page']!=b['source']['page']):errors.append({'code':'invalid-caption-reference','block':b['id'],'caption':cid})
-   if cid in used:errors.append({'code':'duplicate-caption-binding','block':b['id'],'caption':cid})
+   if cid in used and not (b.get('figure_group_id')==cid and lookup[used[cid]].get('figure_group_id')==cid):errors.append({'code':'duplicate-caption-binding','block':b['id'],'caption':cid})
    used[cid]=b['id']
  return errors
 

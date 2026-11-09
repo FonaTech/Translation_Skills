@@ -33,6 +33,36 @@ class WorkflowTests(unittest.TestCase):
   r,m,c,b=self.seed();uid=b['units'][0]['id'];item={'id':uid,'faithful':'不得超过 12.5 V。','interpretive':'电压不得高于 12.5 V。','note':'Source wording retained.'}
   self.apply([item]);self.apply([item]);_,_,c=t.project(r)
   self.assertEqual(len(c['blocks'][0]['units'][0]['notes']),1)
+ def test_reviewed_note_replacement_is_language_scoped_and_logged(self):
+  r,m,c,b=self.seed();u=b['units'][0];uid=u['id'];u['notes']=[{'language':'zh-Hans','note':'Old paraphrase.'},{'language':'ar','note':'Keep Arabic.'}];t.write(r/'content.json',c);before=t.source_snap(m,c)
+  item={'id':uid,'faithful':'不得超过 12.5 V。','interpretive':'电压不得高于 12.5 V。','replace_notes':['Verified source anomaly.']}
+  self.apply([item]);_,m,c=t.project(r)
+  self.assertEqual(t.source_snap(m,c),before)
+  self.assertEqual([(n['language'],n['note']) for n in c['blocks'][0]['units'][0]['notes']],[('ar','Keep Arabic.'),('zh-Hans','Verified source anomaly.')])
+  log=t.read(r/'reports/translation-applications.json')[-1]['note_replacements'][0]
+  self.assertEqual(log['before'][0]['note'],'Old paraphrase.')
+  self.apply([dict(item,replace_notes=[])]);_,_,c=t.project(r)
+  self.assertEqual(c['blocks'][0]['units'][0]['notes'],[{'language':'ar','note':'Keep Arabic.'}])
+ def test_invalid_note_replacement_is_atomic(self):
+  r,m,c,b=self.seed();uid=b['units'][0]['id'];before=(r/'content.json').read_bytes()
+  base={'id':uid,'faithful':'甲','interpretive':'乙'}
+  for extra in [{'replace_notes':['']},{'replace_notes':['duplicate','duplicate']},{'replace_notes':None},{'replace_notes':[], 'note':'Both are ambiguous.'}]:
+   with self.assertRaises(ValueError):self.apply([{**base,**extra}])
+   self.assertEqual((r/'content.json').read_bytes(),before)
+ def test_malformed_notes_block_build_before_browser_or_translation_mutation(self):
+  r,m,c,b=self.seed();u=b['units'][0];uid=u['id']
+  for lang in m['target_languages']:u['translations'][lang]={'faithful':'12.5 V','interpretive':'12.5 V'}
+  for malformed in [['Source anomaly.'],[{'note':3}],[{'note':'  '}],None,[{'note':'Source anomaly.','language':False}]]:
+   u['notes']=malformed;t.write(r/'content.json',c);before=(r/'content.json').read_bytes()
+   self.assertTrue(any(x['code']=='invalid-notes' and x['id']==uid for x in t.audit_data(r,m,c)['errors']))
+   with self.assertRaisesRegex(ValueError,'Build blocked'):p.build(r,browser='unavailable-test-browser')
+   with self.assertRaisesRegex(ValueError,'Invalid existing notes'):self.apply([{'id':uid,'faithful':'甲','interpretive':'乙'}])
+   self.assertEqual((r/'content.json').read_bytes(),before)
+ def test_nonstring_or_blank_packet_note_is_atomic(self):
+  r,m,c,b=self.seed();uid=b['units'][0]['id'];before=(r/'content.json').read_bytes()
+  for bad in [None,False,{},['Source anomaly.'],'  ']:
+   with self.assertRaisesRegex(ValueError,'note requires'):self.apply([{'id':uid,'faithful':'甲','interpretive':'乙','note':bad}])
+   self.assertEqual((r/'content.json').read_bytes(),before)
  def test_source_freshness_and_translation_independence(self):
   r,m,c,b=self.seed();old=t.source_snap(m,c);c['blocks'][0]['units'][0]['translations']={'ar':{'faithful':'أ','interpretive':'ب'}}
   self.assertEqual(old,t.source_snap(m,c));c['blocks'][0]['units'][0]['source']='Different source';t.write(r/'content.json',c)
@@ -70,6 +100,16 @@ class WorkflowTests(unittest.TestCase):
   r,m,c,b=self.seed();self.apply([{'id':b['units'][0]['id'],'faithful':'不得超过 12.5 V。','interpretive':'电压应控制在 12.5 V 以内。'}])
   with contextlib.redirect_stdout(io.StringIO()):t.tasks(argparse.Namespace(project=str(r),language='zh-Hans',size=6,all=False))
   index=t.read(r/'tasks/zh-Hans-index.json');self.assertEqual(index['pending_units'],0);self.assertEqual(index['task_files'],[])
+ def test_task_resume_keeps_empty_targets_pending(self):
+  import agent_packets
+  _,_,c,b=self.seed('Do not exceed 12.5 V.')
+  u=b['units'][0]
+  for value in ['', '  \n ', None, 0]:
+   u['translations']={'zh-Hans':{'faithful':value,'interpretive':'电压不得超过12.5 V。'}}
+   self.assertEqual(len(agent_packets.prepare(c,'zh-Hans',['faithful','interpretive'],False,lambda x:[x])),1)
+  u['source']=''
+  u['translations']={'zh-Hans':{'faithful':'','interpretive':''}}
+  self.assertEqual(agent_packets.prepare(c,'zh-Hans',['faithful','interpretive'],False,lambda x:[x]),[])
  def test_zero_na_and_blank_distinct(self):
   r,m,c,b=self.seed('0 / N/A');u=b['units'][0];u['translations']={'zh-Hans':{'faithful':'0 / N/A','interpretive':'0 / N/A'},'ar':{'faithful':'0 / N/A','interpretive':'0 / N/A'}}
   self.assertFalse(t.audit_data(r,m,c)['errors']);self.assertEqual(u['source'],'0 / N/A')
@@ -99,8 +139,13 @@ class WorkflowTests(unittest.TestCase):
  def test_initials_and_figure_reference_stay_in_sentence(self):
   parts=t.split_text('L. Hemanth Krishna and B. Srinivasu use Fig. 13 for comparison. The second result follows.')
   self.assertEqual(len(parts),2);self.assertTrue(parts[0].startswith('L. Hemanth Krishna'));self.assertIn('Fig. 13',parts[0]);self.assertIn('The second result',parts[1])
+ def test_sentence_before_protected_abbreviation_and_funding_numbers(self):
+  self.assertEqual(t.split_text('One result is shown. Fig. 3 shows another. This is a result.'),['One result is shown.','Fig. 3 shows another.','This is a result.'])
+  self.assertEqual(len(t.split_text('Supported by the foundation (Nos. 123 and 456), and a fellowship (NO. 789). The authors thank the facility.')),2)
  def test_review_becomes_stale(self):
   r,m,c,b=self.seed();old=t.snap(m,c);c['blocks'][0]['units'][0]['translations']['zh-Hans']={'faithful':'新','interpretive':'新'};self.assertNotEqual(old,t.snap(m,c))
+ def test_minimum_and_maximum_abbreviations_keep_following_terms(self):
+  self.assertEqual(t.split_text('The min. CGP is smaller than the max. CGP. This was measured.'),['The min. CGP is smaller than the max. CGP.','This was measured.'])
  def test_release_rejects_unreviewed(self):
   self.seed()
   with contextlib.redirect_stdout(io.StringIO()):code=t.release(argparse.Namespace(project=str(self.r),zip=None))
@@ -142,6 +187,9 @@ class WorkflowTests(unittest.TestCase):
      if rec['file']==stem+'.html':rec['pdf']=stem+'.pdf';rec['pdf_sha256']=t.sha(r/'outputs'/f'{stem}.pdf')
   source_preview=r/'previews/D001-p0001.png';doc=fitz.open();doc.new_page().get_pixmap().save(source_preview);doc.close()
   t.write(r/'reports/layout.json',{'snapshot':t.snap(m,c),'pass':True,'outputs':[dict(x,pages=1,layout={'pages':[{'source_pages':['1'],'block_ids':[b['id']]}]}) for x in records]})
+  import publishing
+  layout=t.read(r/'reports/layout.json');layout['pipeline_fingerprint']=publishing.pipeline_fingerprint();t.write(r/'reports/layout.json',layout)
+  t.write(r/'reports/build.json',{'snapshot':t.snap(m,c),'pipeline_fingerprint':publishing.pipeline_fingerprint(),'artifacts':{f.name:t.sha(f) for f in (r/'outputs').iterdir() if f.suffix in {'.html','.csv'}}})
   manifests={
    'extraction':{'reviewer':'fixture','snapshot':t.snap(m,c),'summary':'Each source block and extracted locator checked.','block_reviews':[{'block_id':z['id'],'status':'checked','observation':'Fixture extraction locator inspected.'} for z in c['blocks']],'findings':[]},
    'semantic':{'reviewer':'fixture','snapshot':t.snap(m,c),'summary':'Both edition strings checked against the test source.','editions':m['editions'],'unit_reviews':[{'unit_id':v['id'],'faithful':'Compared.','interpretive':'Compared.','observation':'Fixture test.'} for _,v in t.units(c)],'findings':[]},

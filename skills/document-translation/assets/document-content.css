@@ -1,0 +1,21 @@
+/* Shared semantic typography for generated reading editions and editor imports. */
+.ed-doc:where(.layout-document) .paragraph{font-size:inherit;line-height:inherit}.ed-doc:where(.layout-document) .mast,.ed-doc:where(.layout-document) .scope-list{width:100%}.ed-page-header span{max-width:100%;overflow:hidden}.ed-doc:where(.layout-document) .block-metadata{font-size:.78em;line-height:1.45;color:#52616b}.ed-doc:where(.layout-document) .block-abstract{font-weight:500;border-inline-start:2px solid var(--accent);padding-inline-start:2mm}.ed-doc:where(.layout-document) .block-keywords{font-size:.82em;line-height:1.5}.ed-doc:where(.layout-document) .block-caption{font-size:.8em;line-height:1.5}.ed-doc:where(.layout-document) table{font-size:var(--table-size,8pt);line-height:1.35}.ed-doc:where(.layout-document) td,.ed-doc:where(.layout-document) th{padding:var(--cell-pad,1mm) .8mm}.ed-doc:where(.layout-document) .pair-label{font-size:7.5pt;margin:1mm 0 .5mm}.ed-doc:where(.layout-document) .pair-start{font-size:6.5pt;margin-top:1.5mm;padding-top:1mm}.ed-doc:where(.layout-document) h2{font-size:var(--title-size,20pt);line-height:1.3;margin:2mm 0 3mm}.ed-doc:where(.layout-document) h3{font-size:calc(var(--body-size)*1.18);line-height:1.35;margin:3mm 0 1.5mm}.ed-doc:where(.layout-document) figure .locator{font-size:6pt}.ed-doc:where(.layout-document) figure figcaption{font-size:var(--caption-size,8pt);line-height:1.45}
+
+.ed-doc:where(.layout-document) h1{font-size:calc(var(--body-size)*var(--heading-ratio));line-height:1.35;margin:var(--head-gap) 0 3mm}
+
+/* References are reading content, not pale administrative metadata. */
+.ed-doc:where(.layout-document) .block-bibliography{font-size:.9em;line-height:1.5;color:#27343c}
+
+.ed-doc:where(.layout-document) [data-reference-entry]{padding-inline-start:4mm;text-indent:-4mm;margin-bottom:1.5mm;break-inside:avoid}
+
+/* A bound caption inherits an explicit readable size, never a second relative reduction. */
+.ed-doc:where(.layout-document) figure figcaption .block-caption{font-size:inherit;line-height:inherit;color:#334550}
+.ed-doc:where(.layout-document) figure figcaption{color:#334550}
+
+/* Bound parts remain one atomic reading object; provenance stays in the DOM. */
+.ed-doc:where(.layout-document) .figure-group{display:flow-root;break-inside:avoid}
+.ed-doc:where(.layout-document) .figure-group-parts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2mm;align-items:start}
+.ed-doc:where(.layout-document) .figure-group-parts>figure{margin:0;min-width:0;text-align:center}
+.ed-doc:where(.layout-document) .figure-group>figure{text-align:center;margin:1mm 0}
+.ed-doc:where(.layout-document) .figure-group figcaption{text-align:start}
+.ed-doc:where(.layout-document) .figure-locator{display:none}

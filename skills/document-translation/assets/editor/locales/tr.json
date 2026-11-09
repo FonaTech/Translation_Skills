@@ -165,11 +165,11 @@
   "msg.span": "Tam genişlik ayarı değişti; önizlemeyi inceleyin",
   "msg.recovered": "Bu tarayıcıda kaydedilen proje geri yüklendi",
   "err.project": "Projede geçerli belge bölümü yok",
-  "err.fileSize": "Dosya 45 MB sınırını aşıyor; bölümlere ayırın",
+  "err.fileSize": "Dosya 256 MB sınırını aşıyor; bölümlere ayırın",
   "err.textChanged": "Düzenleme metni değiştirdi; değişiklikler geri alındı",
   "err.imageSize": "Görsel 15 MB sınırını aşıyor; eklemeden önce sıkıştırın",
   "err.imageType": "Bağımsız statik SVG, PNG, JPEG, GIF veya WebP kullanın",
-  "err.htmlSize": "Geçersiz HTML veya girdi 50 MB sınırını aşıyor",
+  "err.htmlSize": "Geçersiz HTML veya girdi 256 MB sınırını aşıyor",
   "prompt.rows": "Başlık dahil satır sayısı",
   "prompt.cols": "Sütun sayısı",
   "prompt.link": "Bağlantı adresi (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Tablo satırı içerik alanını aşıyor; elle bölün",
   "diag.header": "Tablo başlığı içerik alanını aşıyor",
   "mobile.settings": "Düzen ayarlarını göster / gizle",
-  "zoom.fit": "Genişliğe sığdır"
+  "zoom.fit": "Genişliğe sığdır",
+  "font.document": "Belge yazı tipi ailesi",
+  "font.source": "Kaynak yazı tiplerini koru",
+  "font.serif": "Serif",
+  "font.sans": "Sans serif",
+  "font.mono": "Eş aralıklı",
+  "text.readability": "{count} dar tablo hücresini kaynakla karşılaştırın."
 }

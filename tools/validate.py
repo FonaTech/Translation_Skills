@@ -29,11 +29,11 @@ def validate():
   market=json.loads((R/base/'marketplace.json').read_text());assert market['plugins'][0]['source']=='./'
  checks.extend(['JSON/Python syntax','Clouds resource entrypoints','Codex UI metadata','Claude plugin manifests'])
  version=(R/'VERSION').read_text().strip()
- assert version=='1.0.1',f'Unexpected release version: {version}'
+ assert version=='1.0.2',f'Unexpected release version: {version}'
  for base in ['.claude-plugin','claude-plugin']:
   assert json.loads((R/base/'plugin.json').read_text())['version']==version
   assert json.loads((R/base/'marketplace.json').read_text())['plugins'][0]['version']==version
- for rel in ['README.md','README_zh-CN.md','CHANGELOG.md','skills/document-translation/examples/index.html']:
+ for rel in ['README.md','README_zh-CN.md','CHANGELOG.md']:
   if version not in (R/rel).read_text():errors.append(f'Missing current version metadata: {rel}')
  checks.append('release version consistency')
  for p in R.rglob('*'):

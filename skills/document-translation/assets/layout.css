@@ -11,3 +11,6 @@
 
 /* Compact alignment keeps column labels once per page, all unit IDs and all source/target text. */
 .alignment-page-legend{display:grid;grid-template-columns:1.12fr 1fr 1fr;gap:3mm;height:6mm;align-items:center;font:7pt/1.2 sans-serif;color:#405565;border-bottom:.5px solid #cdd7de}.ed-page.alignment-page .ed-page-body{height:calc(var(--page-height) - 2 * var(--margin-y) - 20mm)}.ed-page .pair{margin:0 0 1mm;padding:1mm 0 0}.ed-page .pair .pair-start{margin:0 0 .5mm;font-size:6pt}.ed-page .pair .pair-grid{gap:3mm}.ed-page .pair .paragraph{font-size:9pt;line-height:1.4;margin:0}
+
+/* Excerpts retain their source locator without a synthetic filename title. */
+.excerpt-mast{padding-bottom:1mm;margin-bottom:1.5mm;border-bottom:.5px solid var(--line)}

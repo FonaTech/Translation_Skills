@@ -165,11 +165,11 @@
   "msg.span": "已切換跨欄設定，請檢查預覽",
   "msg.recovered": "已恢復此瀏覽器暫存",
   "err.project": "專案缺少有效的文件章節",
-  "err.fileSize": "檔案超過 45 MB，請分章節開啟",
+  "err.fileSize": "檔案超過 256 MB，請分章節開啟",
   "err.textChanged": "自動調整改變了文字，已復原",
   "err.imageSize": "圖片超過 15 MB，請壓縮後插入",
   "err.imageType": "僅支援自包含靜態 SVG 或 PNG / JPEG / GIF / WebP",
-  "err.htmlSize": "輸入 HTML 無效或超過 50 MB",
+  "err.htmlSize": "輸入 HTML 無效或超過 256 MB",
   "prompt.rows": "列數（含表頭）",
   "prompt.cols": "欄數",
   "prompt.link": "連結網址（https / http / mailto）",
@@ -287,5 +287,11 @@
   "diag.row": "表格列超出版心，請手動拆分",
   "diag.header": "表頭超出版心",
   "mobile.settings": "顯示 / 隱藏版面設定",
-  "zoom.fit": "符合寬度"
+  "zoom.fit": "符合寬度",
+  "font.document": "文件字型族",
+  "font.source": "保留原文件字型",
+  "font.serif": "襯線字型",
+  "font.sans": "無襯線字型",
+  "font.mono": "等寬字型",
+  "text.readability": "有 {count} 個表格儲存格過窄，請對照原文檢查。"
 }

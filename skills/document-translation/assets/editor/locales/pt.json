@@ -165,11 +165,11 @@
   "msg.span": "Largura total alterada; confira a prévia",
   "msg.recovered": "Projeto salvo neste navegador restaurado",
   "err.project": "O projeto não contém seções de documento válidas",
-  "err.fileSize": "Arquivo maior que 45 MB; divida em seções",
+  "err.fileSize": "Arquivo maior que 256 MB; divida em seções",
   "err.textChanged": "O ajuste alterou o texto; as mudanças foram revertidas",
   "err.imageSize": "Imagem maior que 15 MB; comprima antes de inserir",
   "err.imageType": "Use SVG estático autossuficiente, PNG, JPEG, GIF ou WebP",
-  "err.htmlSize": "HTML inválido ou entrada maior que 50 MB",
+  "err.htmlSize": "HTML inválido ou entrada maior que 256 MB",
   "prompt.rows": "Linhas, incluindo o cabeçalho",
   "prompt.cols": "Colunas",
   "prompt.link": "Endereço do link (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Linha da tabela excede a área de conteúdo; divida manualmente",
   "diag.header": "Cabeçalho da tabela excede a área de conteúdo",
   "mobile.settings": "Mostrar / ocultar configurações de layout",
-  "zoom.fit": "Ajustar à largura"
+  "zoom.fit": "Ajustar à largura",
+  "font.document": "Família de fontes do documento",
+  "font.source": "Manter fontes originais",
+  "font.serif": "Com serifa",
+  "font.sans": "Sem serifa",
+  "font.mono": "Monoespaçada",
+  "text.readability": "Confira {count} células estreitas da tabela com o original."
 }

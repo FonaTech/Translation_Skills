@@ -14,7 +14,7 @@ def run(output,browser=None):
  out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
  project=out/'project'
  if project.exists():raise ValueError('Use a fresh test directory; existing results are preserved.')
- report={'version':'1.0.1','checks':[],'scope':'Original owned color fixtures and actual browser/PDF/editor HTML/DOCX round trips. No semantic certification.'}
+ report={'version':'1.0.2','checks':[],'scope':'Original owned color fixtures and actual browser/PDF/editor HTML/DOCX round trips. No semantic certification.'}
  def check(name,value,detail=None):
   report['checks'].append({'name':name,'pass':bool(value),'detail':detail})
   (out/'asset-fidelity-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
@@ -23,16 +23,23 @@ def run(output,browser=None):
   t.init(argparse.Namespace(project=str(project),title='Color fidelity fixtures',languages='en',style='editorial',page_size='A4',columns=1))
  _,meta,content=t.project(project)
  doc=fitz.open()
- cases=[('cmyk','CMYK',(0,0,0,0),None),('rgb-decode','RGB',(255,255,255),'[1 0 1 0 1 0]'),('gray-decode','L',255,'[1 0]'),('soft-mask','RGBA',(255,0,0,120),None),('original-dark','RGB',(14,20,30),None),('pure-vector',None,None,None)]
+ cases=[('cmyk','CMYK',(0,0,0,0),None),('rgb-decode','RGB',(255,255,255),'[1 0 1 0 1 0]'),('gray-decode','L',255,'[1 0]'),('soft-mask','RGBA',(255,0,0,120),None),('original-dark','RGB',(14,20,30),None),('pure-vector',None,None,None),('small-binary','L',255,None)]
  for name,mode,color,decode in cases:
-  pg=doc.new_page(width=240,height=180)
+  pg=doc.new_page(width=80 if name=='small-binary' else 240,height=80 if name=='small-binary' else 180)
   if mode:
-   im=Image.new(mode,(180,100),color)
+   im=Image.new(mode,(240,240) if name=='small-binary' else (180,100),color)
+   if name=='small-binary':
+    draw=ImageDraw.Draw(im)
+    for row in range(24):
+     for col in range(24):
+      if (row*13+col*7+row*col)%5<2:draw.rectangle((col*10,row*10,col*10+9,row*10+9),fill=0)
    if mode=='CMYK':ImageDraw.Draw(im).rectangle((25,25,60,70),fill=(255,0,0,0))
    data=io.BytesIO();im.save(data,'JPEG' if mode=='CMYK' else 'PNG')
-   x=pg.insert_image(fitz.Rect(20,20,220,160),stream=data.getvalue())
+   x=pg.insert_image(fitz.Rect(4,4,76,76) if name=='small-binary' else fitz.Rect(20,20,220,160),stream=data.getvalue())
    if decode:doc.xref_set_key(x,'Decode',decode)
-  pg.draw_rect(fitz.Rect(18,18,222,162),color=(.1,.3,.5));pg.draw_line((30,155),(210,25),color=(.9,.1,.2))
+  if name!='small-binary':
+   pg.draw_rect(fitz.Rect(18,18,222,162),color=(.1,.3,.5));pg.draw_line((30,155),(210,25),color=(.9,.1,.2))
+  else:pg.draw_rect(fitz.Rect(3,3,77,77),color=(.1,.3,.5))
  source=project/'sources/owned-colors.pdf';doc.save(source);doc.close()
  content['sources']=[{'id':'D001','name':'owned-colors.pdf','file':'sources/owned-colors.pdf','sha256':t.sha(source),'page_count':len(cases),'display_title':'Color fixtures','running_title':'Color fidelity','next_block_index':1}]
  before=t.sha(source)
@@ -40,7 +47,7 @@ def run(output,browser=None):
   for n,(name,*_) in enumerate(cases):
    stem=project/'assets'/name
    result=v.export_crop(doc[n],doc[n].rect,stem)
-   t.add_block(content,'D001','image',{'page':n+1,'bbox':list(doc[n].rect)},[],asset=result['vector'].relative_to(project).as_posix(),asset_sha256=t.sha(result['vector']),asset_fallback=result['fallback'].relative_to(project).as_posix(),asset_fallback_sha256=t.sha(result['fallback']),vector=result['metadata'],width_mm=135,label_policy='no-text')
+   t.add_block(content,'D001','image',{'page':n+1,'bbox':list(doc[n].rect)},[],asset=result['vector'].relative_to(project).as_posix(),asset_sha256=t.sha(result['vector']),asset_fallback=result['fallback'].relative_to(project).as_posix(),asset_fallback_sha256=t.sha(result['fallback']),vector=result['metadata'],width_mm=20 if name=='small-binary' else 135,label_policy='no-text')
    check(name+' preserves vector paths',result['metadata']['svg_paths']>0)
  # Corrupt a color-safe PNG fallback and a retained-original asset independently.
  Image.new('RGB',(600,450),'black').save(project/'assets/cmyk.png')
@@ -49,7 +56,7 @@ def run(output,browser=None):
  t.add_block(content,'D001','image',{'page':1,'bbox':[0,0,240,180]},[],asset='assets/wrong.png',asset_sha256=t.sha(bad),width_mm=135,label_policy='no-text')
  t.write(project/'content.json',content)
  result=f.verify_project(project,browser)
- check('all retained-original assets checked',result['verified_source_crops']==7,result['verified_source_crops'])
+ check('all retained-original assets checked',result['verified_source_crops']==len(cases)+1,result['verified_source_crops'])
  check('bad main asset replaced from source',result['asset_repairs']==1)
  check('bad compatibility fallback repaired',any(x.get('fallback_repaired') for x in result['assets']))
  check('all final metrics pass',all(x['final_metrics']['pass'] for x in result['assets']))
@@ -65,6 +72,8 @@ def run(output,browser=None):
  layout=t.read(project/'reports/layout.json')
  check('all three real PDF editions render',layout['pass'] and len(layout['outputs'])==3)
  check('no empty PDF pages',all(not x['empty_pdf_pages'] for x in layout['outputs']))
+ check('small graphics have bounded recorded alignment',all(any(x['block']==content['blocks'][len(cases)-1]['id'] and max(abs(a-b) for a,b in zip(x['from'],x['to']))<=.51 for x in out['layout'].get('smallGraphicAlignment',[])) for out in layout['outputs']))
+ check('print comparison uses physical page grid',all(t.read(project/'reports'/('figure-pdf-'+out['file'].removesuffix('.html')+'.json')).get('comparison_method')==f.PDF_COMPARISON_VERSION for out in layout['outputs']))
  with sync_playwright() as pw:
   br=pw.chromium.launch(headless=True,**({'executable_path':browser} if browser else {}))
   proof=br.new_page(viewport={'width':1280,'height':1400})
@@ -93,20 +102,20 @@ def run(output,browser=None):
   check('legacy unsafe SVG uses PNG', 'unsafe-vector-replaced-with-png' in sanitized and 'src="data:image/png;' in sanitized)
   awaitless=pg.evaluate('(html)=>Studio.importHTML(html,"Owned color regression")',(project/'outputs/en-faithful.html').read_text())
   preview=pg.evaluate('Studio.preview()');check('editor source import preview passes',preview['pass'],preview)
-  check('all seven figure assets survive editor',sum(x['images'] for x in preview['pages'])==7)
+  check('all source figure assets survive editor',sum(x['images'] for x in preview['pages'])==len(cases)+1)
   for kind in ['html','docx']:
    with pg.expect_download() as download:pg.evaluate('(kind)=>Studio.exportFile(kind)',kind)
    download.value.save_as(out/('editor-color-export.'+kind))
   with zipfile.ZipFile(out/'editor-color-export.docx') as z:
    check('DOCX CRC',z.testzip() is None)
    vectors=[x for x in z.namelist() if x.startswith('word/media/') and x.endswith('.svg')]
-   check('DOCX retains six source SVGs',len(vectors)==6,len(vectors))
+   check('DOCX retains all source SVGs',len(vectors)==len(cases),len(vectors))
    check('DOCX SVG embedded rasters safe',all(all(r['components'] in (1,3) for r in v.embedded_raster_colors(z.read(x))) for x in vectors))
   pg.evaluate('(html)=>Studio.importHTML(html,"HTML round trip")',(out/'editor-color-export.html').read_text())
   check('exported HTML reimports',pg.evaluate('Studio.preview().then(r=>r.pass)'))
   data=base64.b64encode((out/'editor-color-export.docx').read_bytes()).decode()
   imported=pg.evaluate('async s=>Formats.importDocx(Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer)',data)
-  check('DOCX reimports all figures',imported['html'].count('<img ')==7)
+  check('DOCX reimports all figures',imported['html'].count('<img ')==len(cases)+1)
   pg.evaluate('window.print=()=>{window.printCalled=true}')
   pg.evaluate('Studio.exportFile("pdf")');pg.wait_for_function('window.printCalled')
   pg.pdf(path=str(out/'editor-color-print.pdf'),prefer_css_page_size=True,print_background=True)

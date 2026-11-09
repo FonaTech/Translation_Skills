@@ -1,9 +1,5 @@
-# Public notices
+# Public notices and forms
 
-Review focus: Receipt deadlines and conditional eligibility.
+Distinguish sending, submission and receipt deadlines. Preserve conditional eligibility, available-place limits, dates and contact details. Inspect form labels and completed values against the source; leave missing or unreadable entries unresolved.
 
-Read the `public-service` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
-
-Keep the received-by deadline of 17:00 on 12 May and the June review period. Late applications are considered only if places remain. Preserve the distinction between a deadline for receipt and a deadline for sending.
-
-Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.
+Use these checks on the selected source material and both complete editions.

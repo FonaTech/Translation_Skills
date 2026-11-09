@@ -1,9 +1,5 @@
-# Information leaflets
+# Health information
 
-Review focus: Dose, frequency, duration and exceptions.
+Check dose, frequency, duration, route and exceptions exactly as stated in the source. Preserve prohibitions and the conditions attached to instructions. Keep any translator explanation separate and avoid adding treatment advice.
 
-Read the `health` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
-
-Retain 1 tablet with food, once daily for 5 days, unless the clinician gives different instructions. Preserve the prohibition on taking a second dose to replace a missed dose. Do not add treatment advice.
-
-Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.
+Use these checks on the selected source material and both complete editions.

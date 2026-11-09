@@ -56,6 +56,10 @@ const VectorImages=(()=>{
    }
    await img.decode();
    if(!/^data:image\/(?:svg\+xml|webp);base64,/i.test(uri))continue;
+   // A verified source-rendered fallback is more reliable than redrawing SVG
+   // in a different renderer, and must survive repeated exports byte for byte.
+   const existing=img.getAttribute('data-raster-fallback')||'';
+   if(/^data:image\/png;base64,/i.test(existing)&&valid(existing))continue;
    const ratio=img.naturalWidth/Math.max(1,img.naturalHeight),width=Math.min(4096,Math.max(1,img.naturalWidth*2.5)),height=Math.max(1,Math.round(width/ratio));
    if(!Number.isFinite(height)||height>8192||width*height>20*1024*1024)throw Error('Image is too large; provide a verified PNG fallback');
    const canvas=document.createElement('canvas');canvas.width=Math.round(width);canvas.height=height;const context=canvas.getContext('2d');if(!context)throw Error('The browser cannot create a fallback image');context.fillStyle='white';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(img,0,0,canvas.width,canvas.height);img.dataset.rasterFallback=canvas.toDataURL('image/png');

@@ -11,4 +11,4 @@ Refresh skill discovery and invoke it with `/document-translation`. The maintain
 
 The root `.claude-plugin/` directory provides the optional plugin route. The manifests here are browsing copies.
 
-Installation tests cover file copies and metadata. See [validation scope](../skills/document-translation/references/validation-summary.md) for what was exercised.
+Installation tests cover file copies and metadata. See [reproducible checks](../docs/REPRODUCIBILITY.md) for the checks and their scope.

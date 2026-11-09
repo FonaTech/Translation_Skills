@@ -51,7 +51,7 @@ def run(output):
  for source in content['sources']:
   blocks=[b for b in content['blocks'] if b['source']['document_id']==source['id']];units=[u for b in blocks for u in b.get('units',[])];ok=bool(blocks and units)
   records.append({'filename':source['name'],'format':Path(source['name']).suffix.lower(),'blocks':len(blocks),'units':len(units),'conversion_route':source.get('conversion',{}).get('route','native'),'image_ocr_engine':image_engine if Path(source['name']).suffix.lower() in {'.png','.jpg','.jpeg','.tif','.tiff','.webp'} else None,'pass':ok});passed &=ok
- report={'schema_version':'1.0.1','fixture_count':len(sources),'format_routes':records,'expected_formats':sorted(t.SUPPORTED),'local_converter_available':bool(soffice),'image_ocr_engine':image_engine,'translation_generated':False,'meaning':'Owned structural/extraction fixtures only; the invoking model must translate and compare source semantics.','pass':passed and len(records)==len(sources)}
+ report={'schema_version':'1.0.2','fixture_count':len(sources),'format_routes':records,'expected_formats':sorted(t.SUPPORTED),'local_converter_available':bool(soffice),'image_ocr_engine':image_engine,'translation_generated':False,'meaning':'Owned structural/extraction fixtures only; the invoking model must translate and compare source semantics.','pass':passed and len(records)==len(sources)}
  t.write(r/'format-regression.json',report);print(json.dumps(report,ensure_ascii=False,indent=2));return int(not report['pass'])
 
 def main():

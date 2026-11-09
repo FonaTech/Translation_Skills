@@ -8,3 +8,5 @@ jsonschema>=4.20,<5
 
 # Only needed to reproduce ranker training, not offline inference.
 numpy>=1.26,<3
+# Optional exact-outline repair of missing PDF Unicode font maps.
+fonttools>=4.50,<5

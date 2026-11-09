@@ -165,11 +165,11 @@
   "msg.span": "Đã đổi thiết lập toàn chiều rộng; kiểm tra bản xem trước",
   "msg.recovered": "Đã khôi phục dự án lưu trong trình duyệt này",
   "err.project": "Dự án không có phần tài liệu hợp lệ",
-  "err.fileSize": "Tệp vượt 45 MB; chia thành các phần",
+  "err.fileSize": "Tệp vượt 256 MB; chia thành các phần",
   "err.textChanged": "Tinh chỉnh đã thay đổi văn bản; đã hoàn nguyên thay đổi",
   "err.imageSize": "Ảnh vượt 15 MB; nén trước khi chèn",
   "err.imageType": "Dùng SVG tĩnh tự chứa, PNG, JPEG, GIF hoặc WebP",
-  "err.htmlSize": "HTML không hợp lệ hoặc đầu vào vượt 50 MB",
+  "err.htmlSize": "HTML không hợp lệ hoặc đầu vào vượt 256 MB",
   "prompt.rows": "Số hàng, kể cả tiêu đề",
   "prompt.cols": "Số cột",
   "prompt.link": "Địa chỉ liên kết (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "Hàng bảng vượt vùng nội dung; chia thủ công",
   "diag.header": "Tiêu đề bảng vượt vùng nội dung",
   "mobile.settings": "Hiện / ẩn thiết lập bố cục",
-  "zoom.fit": "Vừa chiều rộng"
+  "zoom.fit": "Vừa chiều rộng",
+  "font.document": "Họ phông chữ tài liệu",
+  "font.source": "Giữ phông chữ gốc",
+  "font.serif": "Có chân",
+  "font.sans": "Không chân",
+  "font.mono": "Đơn cách",
+  "text.readability": "Đối chiếu {count} ô bảng hẹp với bản gốc."
 }

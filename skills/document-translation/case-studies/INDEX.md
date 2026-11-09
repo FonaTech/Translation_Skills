@@ -1,18 +1,18 @@
-# Translation cases
-
-Each case identifies a detail that can change meaning during translation. The source passages and paired translations are in [paired-cases.json](../examples/paired-cases.json).
+# Cases and boundary fixtures
 
 | Case | Review focus |
 |---|---|
-| [Research](research.md) | Population, uncertainty and causal wording |
-| [Manual](manual.md) | Warnings, action order and waiting time |
-| [Legal](legal.md) | Permission, obligation, exceptions and defined terms |
-| [Finance](finance.md) | Accounting scope, units and percentage points |
-| [Literary](literary.md) | Voice, imagery and ambiguity |
-| [Public service](public-service.md) | Receipt deadlines and conditional eligibility |
-| [Health](health.md) | Dose, frequency, duration and source exceptions |
-| [Software](software.md) | Identifiers, zero values and negation |
+| [Research](research.md) | evidence strength, uncertainty and population |
+| [Manual](manual.md) | warnings, ordering and thresholds |
+| [Legal](legal.md) | obligations, permissions, exceptions and terms |
+| [Finance](finance.md) | units, accounting scope and percentage points |
+| [Literary](literary.md) | voice and imagery without invented detail |
+| [Public service](public-service.md) | receipt deadlines and conditional eligibility |
+| [Health](health.md) | source dosage/frequency/exception preservation |
+| [Software](software.md) | code identifiers, zero and negation |
 
-The [gallery](../examples/index.html) presents reading editions and source comparisons in five target languages. These author-owned examples illustrate translation decisions; domain expertise still needs separate review where relevant.
+The release contains methodology, runtime assets and verification tools. Translated artifacts and demonstration documents are generated outside the skill and are not included.
 
-Engineering fixtures in `tools/integration.py` exercise multi-file ordering, columns, scanned text, tables, long paragraphs and inert source scripts. The [public-source record](../references/public-test-provenance.json) distinguishes translated excerpts from extraction trials and blocked OCR.
+Additional engineering fixtures in `tools/integration.py` cover a multi-file collection, two-column PDF, scanned PDF, DOCX table, inert source script, 90-row CSV, prolonged paragraph, 0/N/A, and repeated headers. Generate and inspect verification artifacts outside the repository; these are not a universal language benchmark.
+
+For a new field, identify its consequential semantic features, prepare a small representative source/translation pair with provenance, and run the same extraction, dual-edition, layout and review contract. Do not fork the core into field-specific assumptions.

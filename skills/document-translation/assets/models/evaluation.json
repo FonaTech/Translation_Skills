@@ -1,27 +1,29 @@
 {
   "model": "dom-ranker-1.0.1",
   "document_split": true,
-  "training_documents": 48,
-  "holdout_documents": 16,
-  "training_pairs": 12619,
-  "holdout_pairwise_accuracy": 0.9751890359168242,
-  "holdout_mean_regret": 0.0093444375,
+  "training_documents": 60,
+  "holdout_documents": 20,
+  "training_pairs": 15802,
+  "holdout_pairwise_accuracy": 0.976235382874387,
+  "holdout_mean_regret": 0.00609705,
   "holdout": [
     {
       "document": "synthetic-002",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
-      "pairwise_correct": 262,
-      "pairwise_total": 267
+      "pairwise_correct": 252,
+      "pairwise_total": 267,
+      "family": "standard"
     },
     {
       "document": "synthetic-003",
       "selected": "type-open",
       "teacher_best": "type-open",
       "regret": 0.0,
-      "pairwise_correct": 265,
-      "pairwise_total": 265
+      "pairwise_correct": 262,
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-008",
@@ -29,7 +31,8 @@
       "teacher_best": "source",
       "regret": 0.0,
       "pairwise_correct": 259,
-      "pairwise_total": 263
+      "pairwise_total": 263,
+      "family": "standard"
     },
     {
       "document": "synthetic-011",
@@ -37,104 +40,168 @@
       "teacher_best": "source",
       "regret": 0.0,
       "pairwise_correct": 264,
-      "pairwise_total": 267
+      "pairwise_total": 267,
+      "family": "standard"
     },
     {
       "document": "synthetic-012",
       "selected": "source",
       "teacher_best": "heading-open",
       "regret": 0.00888,
-      "pairwise_correct": 257,
-      "pairwise_total": 268
+      "pairwise_correct": 259,
+      "pairwise_total": 268,
+      "family": "standard"
     },
     {
       "document": "synthetic-014",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
-      "pairwise_correct": 256,
-      "pairwise_total": 265
+      "pairwise_correct": 257,
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-018",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
-      "pairwise_correct": 246,
-      "pairwise_total": 250
+      "pairwise_correct": 242,
+      "pairwise_total": 250,
+      "family": "standard"
     },
     {
       "document": "synthetic-020",
       "selected": "type-compact-plus",
       "teacher_best": "type-compact-plus",
       "regret": 0.0,
-      "pairwise_correct": 263,
-      "pairwise_total": 265
+      "pairwise_correct": 252,
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-022",
       "selected": "type-open",
       "teacher_best": "type-open-plus",
       "regret": 0.002276,
-      "pairwise_correct": 262,
-      "pairwise_total": 268
+      "pairwise_correct": 263,
+      "pairwise_total": 268,
+      "family": "standard"
     },
     {
       "document": "synthetic-026",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
-      "pairwise_correct": 254,
-      "pairwise_total": 265
+      "pairwise_correct": 255,
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-028",
-      "selected": "type-open-plus",
+      "selected": "type-open",
       "teacher_best": "type-open-plus",
-      "regret": 0.0,
+      "regret": 0.008733,
       "pairwise_correct": 257,
-      "pairwise_total": 270
+      "pairwise_total": 270,
+      "family": "standard"
     },
     {
       "document": "synthetic-035",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
-      "pairwise_correct": 252,
-      "pairwise_total": 260
+      "pairwise_correct": 253,
+      "pairwise_total": 260,
+      "family": "standard"
     },
     {
       "document": "synthetic-038",
-      "selected": "source",
+      "selected": "type-open",
       "teacher_best": "type-open-plus",
-      "regret": 0.134048,
-      "pairwise_correct": 248,
-      "pairwise_total": 265
+      "regret": 0.030153,
+      "pairwise_correct": 256,
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-048",
-      "selected": "heading-compact",
+      "selected": "source",
       "teacher_best": "heading-compact",
-      "regret": 0.0,
-      "pairwise_correct": 251,
-      "pairwise_total": 261
+      "regret": 0.06884,
+      "pairwise_correct": 254,
+      "pairwise_total": 261,
+      "family": "standard"
     },
     {
       "document": "synthetic-057",
-      "selected": "leading-compact",
+      "selected": "type-compact",
       "teacher_best": "balanced-compact",
-      "regret": 0.004307,
+      "regret": 0.003059,
       "pairwise_correct": 265,
-      "pairwise_total": 265
+      "pairwise_total": 265,
+      "family": "standard"
     },
     {
       "document": "synthetic-059",
       "selected": "source",
       "teacher_best": "source",
       "regret": 0.0,
+      "pairwise_correct": 265,
+      "pairwise_total": 268,
+      "family": "standard"
+    },
+    {
+      "document": "synthetic-067",
+      "selected": "table-open",
+      "teacher_best": "table-open",
+      "regret": 0.0,
+      "pairwise_correct": 264,
+      "pairwise_total": 266,
+      "family": "long"
+    },
+    {
+      "document": "synthetic-068",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
       "pairwise_correct": 266,
-      "pairwise_total": 268
+      "pairwise_total": 270,
+      "family": "alignment"
+    },
+    {
+      "document": "synthetic-077",
+      "selected": "table-open",
+      "teacher_best": "table-open",
+      "regret": 0.0,
+      "pairwise_correct": 267,
+      "pairwise_total": 270,
+      "family": "long"
+    },
+    {
+      "document": "synthetic-078",
+      "selected": "source",
+      "teacher_best": "source",
+      "regret": 0.0,
+      "pairwise_correct": 264,
+      "pairwise_total": 264,
+      "family": "alignment"
     }
   ],
-  "limits": "Disclosed engineering utility of real DOM measurements; synthetic training only. Not a semantic or calibrated aesthetic model."
+  "fixture_families": {
+    "standard": 64,
+    "long": 8,
+    "alignment": 8
+  },
+  "training_page_count_range": [
+    1,
+    56
+  ],
+  "limits": "Disclosed engineering utility of real DOM measurements; synthetic training only. Not a semantic or calibrated aesthetic model.",
+  "numerics": {
+    "contraction": "numpy.einsum, optimize=False",
+    "floating_errors": "raise",
+    "features_gradients_parameters": "finite-checked",
+    "calibrated_aesthetic_confidence": false
+  }
 }

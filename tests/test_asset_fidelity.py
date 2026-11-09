@@ -18,6 +18,58 @@ import vector_assets as v
 
 
 class AssetFidelityTests(unittest.TestCase):
+    def test_adjoining_native_text_exclusion_preserves_graphics_and_source(self):
+        import fitz
+        with fitz.open() as source:
+            pg=source.new_page(width=200,height=200)
+            pg.draw_rect(fitz.Rect(20,20,160,160),color=(0,0,1))
+            pg.insert_text((25,45),'Neighbor caption',fontsize=10)
+            pg.insert_text((25,120),'Figure label',fontsize=10)
+            pixels=pg.get_pixmap().samples
+            exclusions=[{'bbox':[20,30,170,50],'reason':'Inspected adjacent caption','evidence':'previews/p1.png'}]
+            with v.source_crop_page(pg,exclusions) as reviewed:
+                self.assertNotIn('Neighbor caption',reviewed.get_text())
+                self.assertIn('Figure label',reviewed.get_text())
+                self.assertEqual(len(pg.get_drawings()),len(reviewed.get_drawings()))
+            self.assertIn('Neighbor caption',pg.get_text())
+            self.assertEqual(pg.get_pixmap().samples,pixels)
+            with self.assertRaises(ValueError):
+                with v.source_crop_page(pg,[{'bbox':[20,30,170,50]}]):pass
+
+    def test_pdf_comparison_uses_one_physical_grid(self):
+        import fitz
+        with tempfile.TemporaryDirectory() as folder, fitz.open() as source, fitz.open() as target:
+            pg = source.new_page(width=160, height=120)
+            crop = fitz.Rect(13.17, 17.39, 83.17, 87.39)
+            for row in range(28):
+                for col in range(28):
+                    if (row * 13 + col * 7 + row * col) % 5 < 2:
+                        pg.draw_rect(fitz.Rect(13.17+col*2.5, 17.39+row*2.5,
+                                               15.67+col*2.5, 19.89+row*2.5),
+                                     color=None, fill=(0, 0, 0))
+            output = target.new_page(width=594.96, height=793.92)
+            bbox = fitz.Rect(408.902, 490.277, 465.56, 546.935)
+            output.show_pdf_page(bbox, source, 0, clip=crop, keep_proportion=False)
+            expected, actual = [Path(folder) / n for n in ['expected.png', 'actual.png']]
+            metrics = fidelity.compare_pdf_region(pg, crop, output, bbox, expected, actual)
+            self.assertTrue(metrics['pass'], metrics)
+            self.assertEqual(metrics['mean_absolute_rgb_error'], 0)
+            self.assertEqual(metrics['comparison_method'], fidelity.PDF_COMPARISON_VERSION)
+            output.draw_rect(bbox, color=None, fill=(0, 0, 0))
+            self.assertFalse(fidelity.compare_pdf_region(pg, crop, output, bbox, expected, actual)['pass'])
+
+    def test_pdf_comparison_rejects_invalid_regions(self):
+        import fitz
+        with tempfile.TemporaryDirectory() as folder, fitz.open() as source, fitz.open() as target:
+            pg = source.new_page(width=100, height=100)
+            output = target.new_page(width=100, height=100)
+            with self.assertRaisesRegex(ValueError, 'source comparison'):
+                fidelity.compare_pdf_region(pg, [-1,0,50,50], output, [0,0,50,50],
+                                            Path(folder)/'a.png', Path(folder)/'b.png')
+            with self.assertRaisesRegex(ValueError, 'output comparison'):
+                fidelity.compare_pdf_region(pg, [0,0,50,50], output, [0,0,101,50],
+                                            Path(folder)/'a.png', Path(folder)/'b.png')
+
     def make_pdf(self, mode='CMYK', color=None, decode=None):
         import fitz
         from PIL import Image, ImageDraw
@@ -133,12 +185,23 @@ class AssetFidelityTests(unittest.TestCase):
                 publishing.block_html(r, block, 'zh-Hans', 'faithful', publishing.LABELS['zh'])
 
     def test_build_and_render_enter_fidelity_gate(self):
-        with patch('asset_fidelity.verify_project', side_effect=ValueError('figure gate blocked')) as gate:
-            with self.assertRaisesRegex(ValueError, 'figure gate blocked'):
-                publishing.build('not-read')
-            with self.assertRaisesRegex(ValueError, 'figure gate blocked'):
-                publishing.render('not-read')
-            self.assertEqual(gate.call_count, 2)
+        with tempfile.TemporaryDirectory() as folder:
+            r = Path(folder) / 'project'
+            with contextlib.redirect_stdout(io.StringIO()):
+                t.init(argparse.Namespace(project=str(r), title='Fixture', languages='zh-Hans', style='editorial', page_size='A4', columns=1))
+            _, m, c = t.project(r)
+            source = r / 'sources/a.txt'
+            source.write_text('A source sentence.')
+            c['sources'] = [{'id':'D001','name':'a.txt','file':'sources/a.txt','sha256':t.sha(source)}]
+            block = t.add_block(c, 'D001', 'paragraph', {'element':'1'}, ['A source sentence.'])
+            block['units'][0]['translations'] = {'zh-Hans':{'faithful':'一个原文句子。','interpretive':'一条原文句子。'}}
+            t.write(r / 'content.json', c)
+            with patch('asset_fidelity.verify_project', side_effect=ValueError('figure gate blocked')) as gate:
+                with self.assertRaisesRegex(ValueError, 'figure gate blocked'):
+                    publishing.build(r)
+                with self.assertRaisesRegex(ValueError, 'figure gate blocked'):
+                    publishing.render(r)
+                self.assertEqual(gate.call_count, 2)
 
     def test_unsafe_color_audit_error(self):
         from PIL import Image

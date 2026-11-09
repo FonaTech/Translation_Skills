@@ -7,6 +7,9 @@ let url=URL(fileURLWithPath:CommandLine.arguments[1])
 let request=VNRecognizeTextRequest()
 request.recognitionLevel = .accurate
 request.usesLanguageCorrection = false
+// Let Vision select the supported compute device and newest installed revision.
+// Forcing legacy CPU/revision-1 execution can fail on current Apple runtimes.
+if let revision = VNRecognizeTextRequest.supportedRevisions.last { request.revision = revision }
 if CommandLine.arguments.count>2 { request.recognitionLanguages=CommandLine.arguments[2].split(separator:",").map(String.init) }
 do {
  let handler=VNImageRequestHandler(url:url,options:[:]);try handler.perform([request])

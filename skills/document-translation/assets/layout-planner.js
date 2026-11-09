@@ -3,6 +3,10 @@ const LayoutAssist=(()=>{
  const keys=['size','leading','para','head','gap','tableSize','cellPad','titleSize','captionSize'];
  const names=['invalid','overflow','errors','empty','sparse','mean_fill','fill_variation','tail_fill','imbalance','font_delta','leading_delta','spacing_delta','small_type','narrow_measure','page_expansion','figure_fraction','table_fraction','page_count','title_delta','caption_delta','table_type_delta','cell_padding_delta','column_gap_delta','interior_sparse'];
  const clamp=(x,a,b)=>Math.max(a,Math.min(b,Number(x)||0));
+ // Clone mutable metadata while sharing immutable HTML and image strings.
+ // Serializing the full source for every candidate multiplies large assets.
+ function clone(value){if(Array.isArray(value))return value.map(clone);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,clone(item)]));return value;}
+ function equal(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const keys=Object.keys(a);return keys.length===Object.keys(b).length&&keys.every(k=>Object.hasOwn(b,k)&&equal(a[k],b[k]));}
  function candidates(original){
   const profiles=[
    ['source','原始版式',{}],
@@ -30,7 +34,7 @@ const LayoutAssist=(()=>{
    ['dense-but-readable','保守提高页面利用率',{size:-.2,leading:-.035,para:-.45,head:-.45,cellPad:-.2}],
    ['airy-readable','增加正文呼吸感',{size:.2,leading:.04,para:.4,head:.5,gap:.35}]
   ],seen=new Set();return profiles.map(([id,label,delta])=>{
-   const sections=JSON.parse(JSON.stringify(original));let changed=0;
+   const sections=clone(original);let changed=0;
    for(const s of sections){s.overrides={...(s.overrides||{})};for(const [k,v] of Object.entries(delta)){
     if(s.locks?.[k])continue;let old=s.design[k]??({tableSize:8,cellPad:1,titleSize:20,captionSize:8}[k]);
     const bounds={size:[Math.min(old,9.5),Math.max(old,16)],leading:[Math.min(old,1.35),2.2],para:[0,12],head:[0,14],gap:[2,20],tableSize:[Math.min(old,7),16],cellPad:[0,4],titleSize:[10,42],captionSize:[6,14]}[k]||[0,100];
@@ -53,7 +57,7 @@ const LayoutAssist=(()=>{
   // candidate needs fallback, score the entire comparison with the same rule.
   const fallback=candidates.some(c=>c.safe&&c.model==='deterministic-rule-fallback');
   const comparable=candidates.map(c=>fallback?{...c,learned_score:c.model==='deterministic-rule-fallback'?null:c.score,score:ruleScore(c.features),model:'deterministic-rule-fallback',model_fallback:c.model_fallback||'comparison-contains-outside-envelope-candidate'}:c);
-  return comparable.sort((a,b)=>Number(b.safe)-Number(a.safe)||b.score-a.score||a.changed-b.changed);
+  return comparable.sort((a,b)=>Number(b.safe)-Number(a.safe)||(a.report?.readability?.severe||0)-(b.report?.readability?.severe||0)||b.score-a.score||a.changed-b.changed);
  }
  function ruleScore(x){return -50*x[0]-24*x[1]-16*x[2]-50*x[3]-3*Math.max(0,.4-x[5])-3*Math.max(0,x[5]-.95)-1.5*x[6]-.7*x[8]-5*x[9]-1.6*x[10]-1.2*x[11]-5*x[12]-2*x[13]-.9*Math.max(0,x[14])-.5*x[18]-.7*x[19]-.8*x[20]-.25*x[21]-.3*x[22]-2*x[23];}
  function evaluate(candidate,report,original,baselinePages){
@@ -61,5 +65,5 @@ const LayoutAssist=(()=>{
   const learned=Number.isFinite(prediction?.score),score=learned?prediction.score:ruleScore(x);
   return {...candidate,report,features:x,score,safe:isSafe(report),model:learned?prediction.model:'deterministic-rule-fallback',model_fallback:learned?null:prediction?.reason||'model-unavailable'};
  }
- return {keys,names,candidates,features,isSafe,rank,evaluate,ruleScore};
+ return {keys,names,candidates,features,isSafe,rank,evaluate,ruleScore,clone,equal};
 })();

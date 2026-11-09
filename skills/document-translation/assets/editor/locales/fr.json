@@ -165,11 +165,11 @@
   "msg.span": "Réglage pleine largeur modifié ; vérifiez l’aperçu",
   "msg.recovered": "Projet enregistré dans ce navigateur restauré",
   "err.project": "Le projet ne contient aucune section de document valide",
-  "err.fileSize": "Fichier supérieur à 45 Mo ; divisez-le en sections",
+  "err.fileSize": "Fichier supérieur à 256 Mo ; divisez-le en sections",
   "err.textChanged": "L’ajustement a modifié le texte ; les modifications ont été annulées",
   "err.imageSize": "Image supérieure à 15 Mo ; compressez-la avant insertion",
   "err.imageType": "Utilisez SVG statique autonome, PNG, JPEG, GIF ou WebP",
-  "err.htmlSize": "HTML invalide ou entrée supérieure à 50 Mo",
+  "err.htmlSize": "HTML invalide ou entrée supérieure à 256 Mo",
   "prompt.rows": "Lignes, en-tête compris",
   "prompt.cols": "Colonnes",
   "prompt.link": "Adresse du lien (https / http / mailto)",
@@ -287,5 +287,11 @@
   "diag.row": "La ligne du tableau dépasse la zone de contenu ; scindez-la manuellement",
   "diag.header": "L’en-tête du tableau dépasse la zone de contenu",
   "mobile.settings": "Afficher / masquer les réglages de mise en page",
-  "zoom.fit": "Ajuster à la largeur"
+  "zoom.fit": "Ajuster à la largeur",
+  "font.document": "Famille de police du document",
+  "font.source": "Conserver les polices d’origine",
+  "font.serif": "Avec empattements",
+  "font.sans": "Sans empattements",
+  "font.mono": "Chasse fixe",
+  "text.readability": "Vérifiez {count} cellules de tableau étroites avec la source."
 }

@@ -71,7 +71,8 @@
               "heading",
               "table",
               "image",
-              "equation"
+              "equation",
+              "reference"
             ]
           },
           "source": {
@@ -171,7 +172,8 @@
               "unreviewed",
               "translated",
               "no-text",
-              "retained-with-note"
+              "retained-with-note",
+              "retained-original"
             ]
           },
           "label_note": {

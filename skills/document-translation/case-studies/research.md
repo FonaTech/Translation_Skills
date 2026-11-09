@@ -1,9 +1,5 @@
 # Research and evidence
 
-Review focus: Population, effect estimate, uncertainty and causal wording.
+Check the population, effect estimate, uncertainty and source attribution. Preserve the distinction between association and causation, and between simulated, measured and proposed results. Compare each edition with the original passage, including its qualifiers and references.
 
-Read the `research` passage and both translations in [paired-cases.json](../examples/paired-cases.json).
-
-Retain 24 participants, an estimated difference of 2.4 points and a 95% confidence interval of 0.3–4.5. Both editions must preserve the statement that the association does not establish causation.
-
-Compare each edition directly with the source. The passage is an author-owned fictional translation exercise.
+Use these checks on the selected source material and both complete editions.

@@ -31,7 +31,7 @@ def run(output, browser=None):
     t.write(project / 'content.json', c)
     publishing.build(project, browser)
     catalogs = t.read(ROOT / 'skills/document-translation/assets/reader-locales.json')
-    report = {'version': '1.0.1', 'scope': 'Actual generated offline HTML; browser language simulation, not OS certification.', 'checks': [], 'pass': False}
+    report = {'version': '1.0.2', 'scope': 'Actual generated offline HTML; browser language simulation, not OS certification.', 'checks': [], 'pass': False}
 
     def check(name, value, detail=None):
         report['checks'].append({'name': name, 'pass': bool(value), 'detail': detail})
