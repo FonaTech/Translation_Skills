@@ -2,11 +2,31 @@
 
 PDF vector drawings are page commands and may have no embedded bitmap. Ingestion automatically proposes source-bound composite crops from raster footprints, connected vector regions and the parser's caption/label geometry. Pure vector figures trigger SVG export with an opaque source-PNG fallback; mixed artwork is cropped in PDF context to retain paths, masks and labels. Geometry confidence is a heuristic score, not a calibrated probability or semantic figure detector.
 
-Automatic image candidates enter the translation/reading IR only when linked to a nonempty same-page caption block. Unbound artwork stays in reports/figure-regions/ with its crop and text evidence; do not translate it as an illustration or insert it in the reading edition. Missing binding does not establish that an object is not a figure. Keep original prose, tables, equations and explicit page-image/OCR evidence intact. Do not invent a caption to admit a candidate. The figure-policy PROJECT command migrates legacy automatic image blocks losslessly to the audit archive; tasks, build and render enforce the same rule. After source inspection an explicit manual crop remains available.
+Automatic image candidates enter the translation/reading IR only when linked to a nonempty same-page caption block. Unbound artwork stays in reports/figure-regions/ with its crop and text evidence; do not translate it as an illustration or insert it in the reading edition. Missing binding does not establish that an object is not a figure. Keep original prose, tables, equations and source-page evidence intact. Do not invent a caption to admit a candidate. The figure-policy PROJECT command migrates legacy automatic image blocks losslessly to the audit archive; tasks, build and render enforce the same rule. After source inspection an explicit manual crop remains available.
 
-Every automatic or manual crop archives native text in an adjacent .text.json and .text.txt: character boxes, native line IDs, font/size/flags, directions, source page/bounds and nearby caption context. The image block's hash-bound crop_text points to this ledger. Crop pixels remain the evidence when text is outlined, scanned, missing or garbled; request OCR/vision review instead of inventing text. Short native label blocks wholly contained in one caption-bound crop are automatically rehomed to that image's source_label_blocks archive, retaining IDs, text and typography. Partial intersections and long narrative remain active prose. Inspect this ownership proposal and declare retained-original labels explicitly unless actual translated label units exist. Archived labels are not duplicated in body translation tasks.
+Every automatic or manual crop archives native text in an adjacent .text.json and .text.txt: character boxes, native line IDs, font/size/flags, directions, source page/bounds and nearby caption context. The image block's hash-bound crop_text points to this ledger. Crop pixels remain the evidence when text is outlined, scanned, missing or garbled; retain original artwork and flag missing native text; do not run OCR or invent text. Short native label blocks wholly contained in one caption-bound crop are automatically rehomed to that image's source_label_blocks archive, retaining IDs, text and typography. Partial intersections and long narrative remain active prose. Inspect this ownership proposal and declare retained-original labels explicitly unless actual translated label units exist. Archived labels are not duplicated in body translation tasks.
 
-reports/figure-regions/ records automatic bounds, trigger, caption candidate IDs and pending review. tasks includes a figure-context index and related-figure references with the crop and text-ledger paths. Read these files and inspect a wider source region to reconstruct the caption from visible source text, including wrapped or cross-column continuations. Never synthesize an absent caption. Only verified caption IDs should remain bound before publishing.
+Raster strips are joined at measured shared edges before the minimum standalone
+figure-size gate. Small internal bitmaps remain part of the owning plate even
+when they cannot seed a figure by themselves. Label ownership is measured against
+immutable `source_component_bboxes`, not label-expanded rectangles: expanding one
+plate must not make it consume a neighboring plate's labels. Ambiguous competing
+owners keep their native text for review. Explicitly decoded display formulas
+remain independent equation blocks; duplicate or damaged text inside their bounds
+cannot expand a neighboring figure. These are ownership constraints, not newly
+trained weights or a guarantee that all figure components were found.
+
+Coincident source caption anchors with the same printed figure number share
+artwork ownership even when visible and hidden source wording differs. All
+caption block IDs and their separate source text remain available; this does
+not resolve a conflicting transcript or certify which wording is correct.
+Different caption numbers and positions remain distinct. A separate inventory
+of the original page rejects a filtered crop that omits a fully enclosed visible
+source raster. Export and actual-PDF comparison both apply this check before
+comparing pixels against a filtered reference. Partially intersecting neighbors
+are recorded for boundary review; the check does not certify crop completeness.
+
+reports/figure-regions/ records automatic bounds, trigger, caption candidate IDs and pending review. tasks includes a figure-context index and related-figure references with the crop and text-ledger paths. Read these files and inspect a wider source region to associate existing native caption blocks, including wrapped or cross-column continuations. Do not transcribe PDF pixels as an OCR fallback; missing native caption text remains explicitly unavailable. Never synthesize an absent caption. Only verified caption IDs should remain bound before publishing.
 
 reports/source-layout/ is the hash-bound parser-to-layout handoff: ordered blocks, source boxes, typography, column-band proposals, figures, captions and footnote relations. The source-first layout planner reads this map and uses corroborated column evidence; output blocks retain source geometry/order hints. Translation reflows at the target language's length, so reconstruction preserves hierarchy and spatial relationships rather than identical pagination. Inspect and refine renders before any closest-template fallback. If source blocks change, regenerate the map with python3 scripts/translate.py layout-map PROJECT.
 

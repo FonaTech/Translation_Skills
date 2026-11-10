@@ -166,7 +166,7 @@ def recover(source,output,report,reference_fonts,script=None,canonical_space=Fal
                 'native_characters':len(text),'replacement_characters':text.count('\ufffd'),
                 'control_characters':sum(ord(c)<32 and c not in '\t\r\n' for c in text),
                 'text_sha256':hashlib.sha256(text.encode()).hexdigest()})
-    result={'version':'1.0.2','source_sha256':sha(source),'output_sha256':sha(output),'reference_fonts':references,
+    result={'version':'1.0.3','source_sha256':sha(source),'output_sha256':sha(output),'reference_fonts':references,
         'explicit_script_policy':script,'explicit_canonical_space_policy':canonical_space,'explicit_ascii_homoglyph_policy':prefer_ascii,
         'reviewed_map_sha256':sha(reviewed_map) if reviewed_map else None,'fonts':records,'pages':pages,
         'appearance_preserved':all(visual),'source_text_correctness_certified':False,
@@ -182,4 +182,7 @@ def main():
     print(json.dumps(recover(a.source,a.output,a.report,a.reference_font,a.script,a.canonical_space,a.prefer_ascii,a.reviewed_map),ensure_ascii=False))
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

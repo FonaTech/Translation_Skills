@@ -9,7 +9,8 @@ Before submitting:
 ```bash
 python3 -m pip install -r requirements-optional.txt
 python3 tools/validate.py
-python3 -m unittest discover -s tests -v
+python3 -m pip install pytest
+python3 -m pytest tests -q
 python3 tools/checksums.py --write
 python3 tools/checksums.py
 ```

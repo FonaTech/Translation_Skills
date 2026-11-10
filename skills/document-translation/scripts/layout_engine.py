@@ -31,7 +31,6 @@ def pdf_profile(path,selected_pages=None):
     ss=[s for s in line['spans'] if s['text'].strip()];spans+=ss
     for s in ss:
      sizes.extend([s['size']]*min(80,len(s['text'])));fonts.extend([s['font']]*min(80,len(s['text'])))
-     # Normalize signed ARGB values exposed by some PyMuPDF versions.
      rgb=int(s['color'])&0xffffff
      if rgb not in {0,16777215} and readable_accent(color(rgb),None):
       colors.extend([rgb]*min(30,len(s['text'])));colored_spans.append(s)
@@ -211,7 +210,7 @@ def plan(root,m,c,overrides=None):
   override=conf.get('presentation',{}).get('documents',{}).get(s['id'],{})
   __import__('refinement').design_patch(override);design.update(override)
   allplans.append({'document_id':s['id'],'route':route,'design':design,'source_confidence':p['feature_confidence'],'threshold':threshold,'ranking':ranking,'reasons':reason,'fallback_review':rejection,'reference':reference['name'] if reference else s['name']})
- return {'schema_version':'1.0.2','snapshot':snap(m,c),'policy':conf.get('policy','source-first'),'decision_order':['profile source','render source','adjust source and rerender','visual review: severe and unadjustable?','rank fallback templates','render/adjust/review nearest compatible candidate'],'scores_are':'Heuristic feature/fit scores, not statistically calibrated probabilities or aesthetic correctness','profiles':profiles,'documents':allplans,'visual_review_required':True,'automatic_template_switching':False}
+ return {'schema_version':'1.0.3','snapshot':snap(m,c),'policy':conf.get('policy','source-first'),'decision_order':['profile source','render source','adjust source and rerender','visual review: severe and unadjustable?','rank fallback templates','render/adjust/review nearest compatible candidate'],'scores_are':'Heuristic feature/fit scores, not statistically calibrated probabilities or aesthetic correctness','profiles':profiles,'documents':allplans,'visual_review_required':True,'automatic_template_switching':False}
 
 def design_css(plan):
  out=[]

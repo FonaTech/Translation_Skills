@@ -135,10 +135,46 @@ def source_crop_page(page, native_text_exclusions=None, raster_xrefs=None):
         yield reviewed
 
 
+def check_raster_completeness(page, bbox, raster_xrefs=None):
+    """Reject a filtered crop that silently deletes enclosed source images.
+
+    This inventory is measured from the original page, independently of the
+    proposed ownership list and the filtered pixel reference. It cannot prove
+    that the crop itself encloses a complete figure. Partially intersecting
+    neighbors are recorded separately and still require boundary review.
+    """
+    import fitz
+    if raster_xrefs is None:
+        return {'pass': True, 'method': 'unfiltered-source-artwork',
+                'figure_boundary_verified': False}
+    box = fitz.Rect(bbox)
+    inventory = visible_rasters(page)
+    selected = set(raster_xrefs)
+    missing, partial = [], []
+    for item in inventory['regions']:
+        footprint = fitz.Rect(item['bbox'])
+        overlap = (footprint & box).get_area()/max(.01, footprint.get_area())
+        if not item.get('xref') or item['xref'] in selected or overlap <= 0:
+            continue
+        evidence = {'xref': item['xref'], 'bbox': item['bbox'],
+                    'fraction_inside_crop': overlap}
+        (missing if overlap >= .98 else partial).append(evidence)
+    report = {'pass': not missing, 'method': 'original-page-visible-raster-inventory',
+              'inventory_method': inventory['method'], 'warnings': inventory['warnings'],
+              'fully_contained_unselected': missing, 'partially_intersecting_unselected': partial,
+              'figure_boundary_verified': False}
+    if missing:
+        raise ValueError('Incomplete source raster ownership: enclosed image(s) omitted: ' +
+                         ', '.join(str(x['xref']) for x in missing))
+    return report
+
+
 def export_crop(page, bbox, stem, scale=2.5, native_text_exclusions=None, raster_xrefs=None):
+    completeness = check_raster_completeness(page, bbox, raster_xrefs)
     with source_crop_page(page,native_text_exclusions,raster_xrefs) as reviewed:
         result=_export_crop(reviewed,bbox,stem,scale)
     result['metadata']['source_page']=page.number+1
+    result['metadata']['raster_completeness']=completeness
     if native_text_exclusions:result['metadata']['native_text_exclusions']=native_text_exclusions
     if raster_xrefs is not None:result['metadata']['raster_xrefs']=raster_xrefs
     return result
@@ -159,6 +195,31 @@ def _export_crop(page, bbox, stem, scale=2.5):
         isolated = temporary.new_page(width=bb.width, height=bb.height)
         isolated.show_pdf_page(isolated.rect, page.parent, page.number, clip=bb)
         color_records = normalize_pdf_rasters(isolated)
+        # show_pdf_page clips visibility but retains the complete source page
+        # inside a Form XObject. SVG export otherwise serializes its invisible
+        # drawings and embedded images for every tiny inline formula. Apply
+        # MuPDF's geometric page clipping before serializing the isolated copy;
+        # source files are never changed. Older runtimes retain the safe path.
+        clipper = getattr(isolated, 'clip_to_rect', None)
+        pruned = False
+        pruning_rejected = False
+        if callable(clipper):
+            # Some PDF glyphs extend beyond their declared font bounds. The
+            # clipper can delete visible brackets despite an unchanged viewport.
+            # Accept cleanup only when the actual RGB pixels remain identical.
+            verification_scale = min(8, 1536 / max(bb.width, bb.height))
+            matrix = fitz.Matrix(verification_scale, verification_scale)
+            before = isolated.get_pixmap(matrix=matrix, colorspace=fitz.csRGB, alpha=False)
+            clipper(isolated.rect)
+            after = isolated.get_pixmap(matrix=matrix, colorspace=fitz.csRGB, alpha=False)
+            pruned = before.width == after.width and before.height == after.height and before.samples == after.samples
+            if not pruned:
+                pruning_rejected = True
+                temporary.close()
+                temporary = fitz.open()
+                isolated = temporary.new_page(width=bb.width, height=bb.height)
+                isolated.show_pdf_page(isolated.rect, page.parent, page.number, clip=bb)
+                color_records = normalize_pdf_rasters(isolated)
         svg = isolated.get_svg_image(text_as_path=True)
         root = validate_svg(svg)
         raster_colors = embedded_raster_colors(svg)
@@ -174,6 +235,9 @@ def _export_crop(page, bbox, stem, scale=2.5):
             'svg_paths': len(list(root.iter('{' + SVG_NS + '}path'))),
             'embedded_rasters': len(list(root.iter('{' + SVG_NS + '}image'))),
             'raster_colors': raster_colors, 'color_normalization': color_records,
+            'offscreen_content_pruned': pruned,
+            'pruning_rejected_visible_pixel_change': pruning_rejected,
+            'pruning_verification': 'identical-RGB-at-bounded-source-resolution' if callable(clipper) else 'unavailable',
             'reference_renderer': 'source PDF, RGB, alpha=False',
             'visual_review': 'pending',
             'limits': 'Font outlines are preserved graphics, not editable or automatically translated text.'}}

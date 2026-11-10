@@ -26,12 +26,12 @@ def run(output, browser=None):
     source = project / 'sources/owned.txt'
     source.write_text('Keep the value 12.5 V. Do not change the source.', encoding='utf-8')
     c['sources'] = [{'id': 'D001', 'name': 'owned.txt', 'file': 'sources/owned.txt', 'sha256': t.sha(source)}]
-    b = t.add_block(c, 'D001', 'paragraph', {'element': '1'}, [source.read_text()])
+    b = t.add_block(c, 'D001', 'paragraph', {'element': '1'}, [source.read_text( encoding='utf-8')])
     b['units'][0]['translations'] = {'zh-Hans': {'faithful': '保留 12.5 V 这一数值。不要更改原文。', 'interpretive': '数值应保持为 12.5 V，原文内容不可更改。'}}
     t.write(project / 'content.json', c)
     publishing.build(project, browser)
     catalogs = t.read(ROOT / 'skills/document-translation/assets/reader-locales.json')
-    report = {'version': '1.0.2', 'scope': 'Actual generated offline HTML; browser language simulation, not OS certification.', 'checks': [], 'pass': False}
+    report = {'version': '1.0.3', 'scope': 'Actual generated offline HTML; browser language simulation, not OS certification.', 'checks': [], 'pass': False}
 
     def check(name, value, detail=None):
         report['checks'].append({'name': name, 'pass': bool(value), 'detail': detail})
@@ -121,6 +121,8 @@ def run(output, browser=None):
 
 
 if __name__ == '__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--output', required=True); ap.add_argument('--browser')
     args = ap.parse_args()

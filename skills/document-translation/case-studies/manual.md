@@ -1,5 +1,9 @@
 # Instructions and warnings
 
-Preserve warning levels, prohibitions, action order, waiting periods and operating thresholds. Keep each figure with the step or caution it explains. An interpretive edition can simplify wording while retaining every prerequisite and exception.
+Decision to practice: Warning levels, prohibition, sequence and waiting time.
 
-Use these checks on the selected source material and both complete editions.
+Inspect a representative passage from the actual selected material. Establish its full meaning before writing either target edition. Keep source text and translated artifacts outside the installed skill.
+
+Acceptance: Preserve the source’s complete conditions, values, qualifications, attributed actors and consequential order in both editions.
+
+Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.

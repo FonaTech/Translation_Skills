@@ -1,5 +1,9 @@
-# Health information
+# Consequential instructions
 
-Check dose, frequency, duration, route and exceptions exactly as stated in the source. Preserve prohibitions and the conditions attached to instructions. Keep any translator explanation separate and avoid adding treatment advice.
+Decision to practice: Dosage, frequency, duration, exceptions and missed-dose prohibition.
 
-Use these checks on the selected source material and both complete editions.
+Inspect a representative passage from the actual selected material. Establish its full meaning before writing either target edition. Keep source text and translated artifacts outside the installed skill.
+
+Acceptance: Preserve the source’s complete conditions, values, qualifications, attributed actors and consequential order in both editions.
+
+Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.

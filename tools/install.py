@@ -27,7 +27,7 @@ def install(target,dest,apply=False):
   shutil.copytree(source,dest,ignore=shutil.ignore_patterns('__pycache__','*.pyc','.DS_Store'))
   if target=='clouds':
    import yaml
-   skill=dest/'SKILL.md';raw=skill.read_text();_,front,body=raw.split('---',2);meta=yaml.safe_load(front);overlay=json.loads((dest/'agents/clouds-coder.json').read_text());meta.update(overlay);skill.write_text('---\n'+yaml.safe_dump(meta,allow_unicode=True,sort_keys=False)+'---'+body)
+   skill=dest/'SKILL.md';raw=skill.read_text( encoding='utf-8');_,front,body=raw.split('---',2);meta=yaml.safe_load(front);overlay=json.loads((dest/'agents/clouds-coder.json').read_text( encoding='utf-8'));meta.update(overlay);skill.write_text('---\n'+yaml.safe_dump(meta,allow_unicode=True,sort_keys=False)+'---'+body, encoding='utf-8')
  except Exception:
   if dest.exists():shutil.rmtree(dest)
   if result['backup']:Path(result['backup']).rename(dest)
@@ -38,5 +38,7 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--targets',nargs='+',choices=['codex','codex-legacy','claude','opencode','clouds'],required=True);p.add_argument('--project');p.add_argument('--home',help='Explicit test/user home root; never changes HOME');p.add_argument('--clouds-root');p.add_argument('--apply',action='store_true');a=p.parse_args()
  print(json.dumps([install(t,destinations(t,a.project,a.home,a.clouds_root),a.apply) for t in a.targets],ensure_ascii=False,indent=2))
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  try:main()
  except (ValueError,OSError) as e:print('ERROR: '+str(e),file=sys.stderr);sys.exit(2)

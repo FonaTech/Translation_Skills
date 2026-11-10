@@ -28,6 +28,118 @@ def line(lid,text,x,y,width=180,block=0,index=0):
 
 
 class StructureTests(unittest.TestCase):
+    def test_numbered_capitals_use_blank_source_advance_only_as_heading_cue(self):
+        heading=line('h','III.\x03 GENETIC ALGORITHM',100,80,width=130)
+        heading['spans'][0]['chars']=[{'c':'\x03','unicode_unresolved':True,
+            'native_glyph':{'empty_outline':True,'svg':'<svg/>'}}]
+        body=line('p','The genetic algorithm operates on the original source records.',40,100,width=250)
+        page={'lines':[heading,body]};before=copy.deepcopy(page)
+        self.assertTrue(s.centered_numbered_capitals(heading,page))
+        self.assertEqual(page,before)
+        for value in ['III. A = B + C','III. GENETIC ALGORITHM = TEST','(a) GENETIC ALGORITHM']:
+            other=copy.deepcopy(heading);other['text']=value
+            self.assertFalse(s.centered_numbered_capitals(other,{'lines':[other,body]}))
+        heading['spans'][0]['chars'][0]['native_glyph']['empty_outline']=False
+        self.assertFalse(s.centered_numbered_capitals(heading,page))
+
+    @staticmethod
+    def glyph_line(lid,text,x,y,block):
+        row=line(lid,text,x,y,len(text)*4,block=block)
+        row['spans'][0]['chars']=[{'c':c,'bbox':[x+i*4,y,x+(i+1)*4,y+10],
+                                  'origin':[x+i*4,y+8]} for i,c in enumerate(text)]
+        return row
+
+    def test_repeated_cross_object_prose_seams_rejoin_source_characters(self):
+        first='The source paragraph contains a measured va'
+        second='alue with its original conditions.'
+        rows=[]
+        for i in range(3):
+            a=self.glyph_line('a'+str(i),first,40,100+i*12,1)
+            b=self.glyph_line('b'+str(i),second,a['bbox'][2]-4,100+i*12,2)
+            rows.extend([a,b])
+        output=s.physical_rows(rows)
+        self.assertEqual(len(output),3)
+        for row in output:
+            self.assertEqual(row['text'],first+second[1:])
+            self.assertEqual(len(row['native_line_ids']),2)
+            evidence=row['source_assembly']
+            self.assertFalse(evidence['generated_characters'])
+            self.assertEqual([c['c'] for c in evidence['coincident_source_glyphs']],['a'])
+            self.assertEqual(len(row['spans']),2)
+            self.assertEqual(''.join(sp['text'] for sp in row['spans']),row['text'])
+        self.assertEqual(sorted(lid for row in output for lid in row['native_line_ids']),
+                         sorted(row['id'] for row in rows))
+
+    def test_cross_object_prose_needs_repeated_geometry_and_rejects_conflicting_ink(self):
+        first='The source paragraph contains a measured va'
+        rows=[]
+        for i in range(3):
+            a=self.glyph_line('a'+str(i),first,40,100+i*12,1)
+            b=self.glyph_line('b'+str(i),'Zlue with its original conditions.',a['bbox'][2]-4,100+i*12,2)
+            rows.extend([a,b])
+        self.assertEqual(len(s.physical_rows(rows)),6)
+        rows[1]=self.glyph_line('b0','alue with its original conditions.',rows[0]['bbox'][2]-4,100,2)
+        self.assertEqual(len(s.physical_rows(rows[:2])),2)
+
+    def test_cross_object_prose_preserves_table_cells_and_column_gutters(self):
+        rows=[]
+        for i in range(3):
+            a=self.glyph_line('a'+str(i),'The original left cell has measured values',20,100+i*12,1)
+            b=self.glyph_line('b'+str(i),'The independent right cell remains separate.',a['bbox'][2]+2,100+i*12,2)
+            rows.extend([a,b])
+        cut=rows[0]['bbox'][2]+1
+        cells=[{'cells':[[10,90,cut,145],[cut,90,500,145]]}]
+        self.assertEqual(len(s.physical_rows(rows,cells)),6)
+        for row in rows[1::2]:
+            row['bbox']=[v+(20 if j%2==0 else 0) for j,v in enumerate(row['bbox'])]
+        self.assertEqual(len(s.physical_rows(rows)),6)
+
+    def test_explicit_same_baseline_heading_crosses_native_objects(self):
+        a=self.glyph_line('a','III. MEASURED SOURCE ',40,80,1)
+        b=self.glyph_line('b','OBSERVATIONS',a['bbox'][2],80,2)
+        output=s.physical_rows([a,b])
+        self.assertEqual(len(output),1)
+        self.assertEqual(output[0]['text'],'III. MEASURED SOURCE OBSERVATIONS')
+        self.assertEqual(output[0]['source_assembly']['method'],'explicit-heading-seam')
+
+    def test_single_caption_seam_needs_a_coincident_source_glyph(self):
+        first='Fig. 3. The measured response from a MOS'
+        a=self.glyph_line('a',first,40,100,1)
+        b=self.glyph_line('b','SFET under the stated conditions.',a['bbox'][2]-4,100,2)
+        output=s.physical_rows([a,b])
+        self.assertEqual(len(output),1)
+        self.assertEqual(output[0]['text'],first+'FET under the stated conditions.')
+        self.assertEqual(output[0]['source_assembly']['method'],'caption-coincident-glyph-seam')
+        b=self.glyph_line('b','Separate source label remains intact.',a['bbox'][2]+2,100,2)
+        self.assertEqual(len(s.physical_rows([a,b])),2)
+
+    def test_first_page_chapter_heading_ends_front_matter_before_unfinished_prose(self):
+        title=line('title','An original chapter title',40,80,300);title.update(size=16,font='Times-Bold',flags=16)
+        heading=line('heading','7.1 An original numbered section',40,180,270,block=1)
+        heading.update(size=11,font='Times-Bold',flags=16)
+        body=[line('p'+str(i),text,40,205+i*13,300,block=2,index=i) for i,text in enumerate([
+            'The original paragraph contains a continuous explanation of the',
+            'measured source and retains all conditions before the next display',
+            'with an unfinished clause leading into the original equation',
+            'whose final expression appears below and must remain separate'])]
+        page={'page':1,'width':600,'height':800,'lines':[title,heading]+body}
+        profile=s.document_profile([page])
+        self.assertEqual(profile['front_matter_bottom'],180)
+        features=s.role_features(body[0],page,profile)
+        self.assertFalse(features[s.ROLE_FEATURES.index('front_matter_metadata_context')])
+
+    def test_damaged_inline_glyph_keeps_measured_prose_continuation_and_review(self):
+        rows=[line('a','The measured source remains unchanged. The',40,100,230),
+              line('b','change in the probability of state '+chr(14)+' is recorded',40,113,230,index=1)]
+        page={'page':3,'width':600,'height':800,'lines':rows,'raw_sha256':s.digest(rows)}
+        result=s.reconstruct(page,s.document_profile([page]))
+        joined=[b for b in result['blocks'] if set(b['line_ids'])=={'a','b'}]
+        self.assertEqual(len(joined),1)
+        self.assertIn('The change in',joined[0]['text'])
+        self.assertIn(chr(14),joined[0]['text'])
+        self.assertTrue(joined[0]['review_required'])
+        self.assertTrue(result['coverage']['pass'])
+
     def test_detached_reference_marker_is_rejoined_without_losing_native_ids(self):
         marker=line('marker','[12]',40,100,14,block=1)
         text=line('text','Smith, A. An original measured result, Journal 2025.',60,100,230,block=2)
@@ -415,8 +527,8 @@ class StructureTests(unittest.TestCase):
     def test_composite_model_provenance_keeps_both_heads_fitting_sources(self):
         import train_structure_forest as forest
         with tempfile.TemporaryDirectory() as td:
-            annotation=Path(td)/'annotations.json';annotation.write_text('{}')
-            base=Path(td)/'base.json';base.write_text('{}')
+            annotation=Path(td)/'annotations.json';annotation.write_text('{}', encoding='utf-8')
+            base=Path(td)/'base.json';base.write_text('{}', encoding='utf-8')
             model={'training':{'real_train_source_sha256':['a'*64],
                                'real_validation_source_sha256':['b'*64]}}
             forest.record_head_provenance(model,[{'source_sha256':'c'*64,'source_parent_sha256':['e'*64]}],
@@ -934,14 +1046,14 @@ class StructureTests(unittest.TestCase):
         b={'id':'repaired','split':'test','source_sha256':'b'*64,'source_parent_sha256':['a'*64],'pages':[]}
         with self.assertRaisesRegex(ValueError,'source family'):trainer.validate_document_splits([a,b])
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[b]}))
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[b]}), encoding='utf-8')
             model=Path(tmp)/'model.json'
             provenance={'training':{'real_train_source_sha256':['a'*64],'real_validation_source_sha256':[]}}
             with patch.object(s,'load_model',return_value=provenance):
                 with self.assertRaisesRegex(ValueError,'participated in fitting'):
                     corpus.evaluate(labels,model,Path(tmp)/'result.json')
             provenance['training']={'real_train_source_sha256':['b'*64],'real_train_source_family_sha256':['a'*64]}
-            b.update(source_sha256='c'*64,source_parent_sha256=['a'*64]);labels.write_text(json.dumps({'documents':[b]}))
+            b.update(source_sha256='c'*64,source_parent_sha256=['a'*64]);labels.write_text(json.dumps({'documents':[b]}), encoding='utf-8')
             with patch.object(s,'load_model',return_value=provenance):
                 with self.assertRaisesRegex(ValueError,'participated in fitting'):
                     corpus.evaluate(labels,model,Path(tmp)/'result.json')
@@ -954,11 +1066,11 @@ class StructureTests(unittest.TestCase):
         result={'line_roles':[{'line_id':'only','assigned_role':'body'}],
                 'blocks':[{'role':'body','line_ids':['only']}],'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            evaluation=json.loads(out.read_text());metrics=evaluation['documents'][0]
+            evaluation=json.loads(out.read_text( encoding='utf-8'));metrics=evaluation['documents'][0]
             for key in ['join_precision','join_recall','join_f1']:self.assertIsNone(metrics[key])
             self.assertIn('unmeasured',metrics['join_metric_status'])
             self.assertEqual(metrics['exact_prose_groups'],0)
@@ -980,11 +1092,11 @@ class StructureTests(unittest.TestCase):
                           {'role':'equation','line_ids':['q1','q2']}],
                 'relations':[],'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            metrics=json.loads(out.read_text())['documents'][0]
+            metrics=json.loads(out.read_text( encoding='utf-8'))['documents'][0]
         self.assertEqual(metrics['join_true_positive'],1)
         self.assertEqual(metrics['join_false_negative'],0)
         self.assertEqual(metrics['equation_region_membership']['exact_recall'],1)
@@ -1003,11 +1115,11 @@ class StructureTests(unittest.TestCase):
                 'blocks':[{'role':'body','line_ids':['a']},{'role':'body','line_ids':['b']}],
                 'relations':[],'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            metrics=json.loads(out.read_text())['documents'][0]
+            metrics=json.loads(out.read_text( encoding='utf-8'))['documents'][0]
         self.assertIsNone(metrics['reading_order_accuracy'])
         self.assertEqual(metrics['reading_order_truth_coverage'],0)
         self.assertIn('partial-reading-order-truth',metrics['certification_blockers'])
@@ -1048,11 +1160,11 @@ class StructureTests(unittest.TestCase):
                 'blocks':[{'role':'body','line_ids':['clean']},{'role':'body','line_ids':['damaged']}],
                 'relations':[],'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            metrics=json.loads(out.read_text())['documents'][0]
+            metrics=json.loads(out.read_text( encoding='utf-8'))['documents'][0]
         self.assertEqual(metrics['role_examples'],1)
         self.assertEqual(metrics['role_accuracy'],1)
         self.assertEqual(metrics['role_truth_coverage'],.5)
@@ -1078,11 +1190,11 @@ class StructureTests(unittest.TestCase):
                           {'role':'body','line_ids':['b']}],
                 'relations':[],'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            metrics=json.loads(out.read_text())['documents'][0]
+            metrics=json.loads(out.read_text( encoding='utf-8'))['documents'][0]
         self.assertEqual(metrics['role_examples'],1)
         self.assertEqual(metrics['role_accuracy'],1)
         self.assertEqual(metrics['role_truth_coverage'],.5)
@@ -1113,11 +1225,11 @@ class StructureTests(unittest.TestCase):
                 'blocks':[{'role':'body','line_ids':[r['id']]} for r in rows],
                 'coverage':{'pass':True}}
         with tempfile.TemporaryDirectory() as tmp:
-            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}))
-            model=Path(tmp)/'model.json';model.write_text('{}');out=Path(tmp)/'results.json'
+            labels=Path(tmp)/'labels.json';labels.write_text(json.dumps({'documents':[doc]}), encoding='utf-8')
+            model=Path(tmp)/'model.json';model.write_text('{}', encoding='utf-8');out=Path(tmp)/'results.json'
             with patch.object(s,'load_model',return_value={}),patch.object(s,'reconstruct',return_value=result):
                 corpus.evaluate(labels,model,out)
-            metrics=json.loads(out.read_text())['documents'][0]
+            metrics=json.loads(out.read_text( encoding='utf-8'))['documents'][0]
         self.assertEqual(metrics['assembly_truth_coverage'],.5)
         self.assertEqual(metrics['eligible_prose_groups'],1)
         self.assertEqual(metrics['unscorable_prose_groups'],1)
@@ -1197,7 +1309,7 @@ class StructureTests(unittest.TestCase):
             argv=['train_source_structure.py','--documents','0','--epochs','1','--output',str(model),'--evidence',str(evidence)]
             with patch.object(sys,'argv',argv),patch.object(trainer,'synthetic',return_value=[doc]),patch.object(trainer,'train_head',return_value={}),patch.object(trainer,'evaluate',return_value={'accuracy':None}),contextlib.redirect_stdout(io.StringIO()):
                 trainer.main()
-            self.assertEqual(json.loads(evidence.read_text())['splits'][0]['label_source'],'not-recorded')
+            self.assertEqual(json.loads(evidence.read_text( encoding='utf-8'))['splits'][0]['label_source'],'not-recorded')
 
     def test_table_cell_boundaries_override_same_baseline_recovery(self):
         a=line('a','A long cell entry that needs enough source characters',20,30,90)
@@ -1248,7 +1360,7 @@ class StructureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             annotations=Path(tmp)/'truth.json'
             annotations.write_text(json.dumps({'documents':[{'id':'renamed-test',
-                'source_sha256':'a'*64,'split':'test','pages':[]}]}))
+                'source_sha256':'a'*64,'split':'test','pages':[]}]}), encoding='utf-8')
             with patch.object(s,'load_model',return_value={'training':{
                 'real_train_source_sha256':['a'*64]}}):
                 with self.assertRaisesRegex(ValueError,'participated in fitting'):
@@ -1322,7 +1434,7 @@ class StructureTests(unittest.TestCase):
 
     def test_incompatible_model_fails_explicitly(self):
         with tempfile.TemporaryDirectory() as tmp:
-            p=Path(tmp)/'model.json';p.write_text(json.dumps({'role_features':['wrong']}))
+            p=Path(tmp)/'model.json';p.write_text(json.dumps({'role_features':['wrong']}), encoding='utf-8')
             with self.assertRaisesRegex(ValueError,'contract mismatch'):s.load_model(str(p))
 
     def test_narrow_two_and_three_column_order(self):
@@ -1408,7 +1520,7 @@ class StructureTests(unittest.TestCase):
             self.assertIn('12.5 V.',text);self.assertIn('incomplete',text)
             route=content['sources'][0]['structure']
             self.assertEqual(route['route'],'ml');self.assertEqual(route['requested_route'],'auto')
-            self.assertEqual(route['model_id'],'source-structure-1.0.2-r58-h192-region-h96')
+            self.assertEqual(route['model_id'],'source-structure-1.0.3-r58-h192-region-h96')
             self.assertEqual(route['model_sha256'],__import__('hashlib').sha256(s.MODEL_PATH.read_bytes()).hexdigest())
             self.assertTrue(all(not u['translations'] for _,u in t.units(content)))
             from refinement import validate_blocks

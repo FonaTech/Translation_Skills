@@ -25,5 +25,8 @@ def main():
   assert len(z.namelist())==len(expected),'Duplicate ZIP entries'
   for rel in ['.claude-plugin/plugin.json','.github/workflows/validate.yml','README.md','LICENSE','skills/document-translation/SKILL.md']:assert 'Translation_Skills/'+rel in z.namelist(),rel
   count=len(z.namelist())
- digest=hashlib.sha256(out.read_bytes()).hexdigest();out.with_suffix(out.suffix+'.sha256').write_text(digest+'  '+out.name+'\n');print(f'Packaged and reopened {out.name}: {count} files; SHA-256 {digest}')
-if __name__=='__main__':main()
+ digest=hashlib.sha256(out.read_bytes()).hexdigest();out.with_suffix(out.suffix+'.sha256').write_text(digest+'  '+out.name+'\n', encoding='utf-8');print(f'Packaged and reopened {out.name}: {count} files; SHA-256 {digest}')
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

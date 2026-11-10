@@ -205,7 +205,7 @@ def partition_documents(documents, base_model):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--base-model',type=Path,required=True);ap.add_argument('--annotations',type=Path,required=True);ap.add_argument('--output',type=Path,required=True);ap.add_argument('--evidence',type=Path,required=True);ap.add_argument('--documents',type=int,default=100);ap.add_argument('--epochs',type=int,default=250);ap.add_argument('--hidden',type=int,default=96,help='Hidden units in the specialist region head (8-512).');ap.add_argument('--seed',type=int,default=173);a=ap.parse_args()
     if not 8<=a.hidden<=512:ap.error('--hidden must be between 8 and 512')
-    data=json.loads(a.annotations.read_text());docs=data['documents'];model=json.loads(a.base_model.read_text())
+    data=json.loads(a.annotations.read_text( encoding='utf-8'));docs=data['documents'];model=json.loads(a.base_model.read_text( encoding='utf-8'))
     partitions=partition_documents(docs,model)
     train={d['source_sha256'] for d in partitions['train']};other={d['source_sha256'] for d in partitions['validation']}
     if train&other:raise ValueError('Source leakage across specialist splits.')
@@ -218,8 +218,8 @@ def main():
     validation=examples(partitions['validation'])
     holdout=examples(partitions['holdout']);test=examples(partitions['test'])
     head,curve=fit(training,a.seed,a.epochs,a.hidden)
-    model.update(id=f'source-structure-v1.0.2-region-context-h{a.hidden}',region_head={'revision':r.REVISION,'features':r.FEATURES,'classes':r.CLASSES,'threshold':.9,'network':head})
-    evidence={'version':'1.0.2','seed':a.seed,'base_model_sha256':hashlib.sha256(a.base_model.read_bytes()).hexdigest(),
+    model.update(id=f'source-structure-v1.0.3-region-context-h{a.hidden}',region_head={'revision':r.REVISION,'features':r.FEATURES,'classes':r.CLASSES,'threshold':.9,'network':head})
+    evidence={'version':'1.0.3','seed':a.seed,'base_model_sha256':hashlib.sha256(a.base_model.read_bytes()).hexdigest(),
               'annotation_sha256':hashlib.sha256(a.annotations.read_bytes()).hexdigest(),'source_module_sha256':hashlib.sha256(Path(s.__file__).read_bytes()).hexdigest(),
               'region_module_sha256':hashlib.sha256(Path(r.__file__).read_bytes()).hexdigest(),
               'architecture':[len(r.FEATURES),a.hidden,len(r.CLASSES)],'loss':{'supervised':'class-balanced cross entropy, inspected-source weight 8','geometry_weight':.18,'region_consistency_weight':.12,'curve':curve},
@@ -231,6 +231,9 @@ def main():
               'scope':data.get('protocol'),'threshold_policy':'fixed .9 and .4 margin before validation; source-evidence gates remain mandatory'}
     # Keep private identities/evidence out of the redistributable checkpoint.
     model['region_head']['training']={'seed':a.seed,'architecture':evidence['architecture'],'original_synthetic_documents':a.documents,'source_training_documents':len(train),'selected_page_diagnostics':True,'whole_document_accuracy_certified':False,'real_train_source_sha256':sorted(train),'real_validation_source_sha256':sorted(other),'loss_weights':{'geometry':.18,'region_consistency':.12}}
-    a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(model,separators=(',',':'))+'\n');evidence['model_sha256']=hashlib.sha256(a.output.read_bytes()).hexdigest();a.evidence.write_text(json.dumps(evidence,indent=2)+'\n');s.load_model.cache_clear();s.load_model(str(a.output))
+    a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(model,separators=(',',':'))+'\n', encoding='utf-8');evidence['model_sha256']=hashlib.sha256(a.output.read_bytes()).hexdigest();a.evidence.write_text(json.dumps(evidence,indent=2)+'\n', encoding='utf-8');s.load_model.cache_clear();s.load_model(str(a.output))
     print(json.dumps({'training_accuracy':evidence['training']['accuracy'],'training_rows':evidence['training']['rows'],'validation':evidence['validation'],'model':str(a.output)},indent=2))
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

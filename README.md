@@ -4,7 +4,7 @@ Translate documents into two complete editions, with HTML, PDF and a source-by-s
 
 [中文说明](README_zh-CN.md) · [Installation](docs/INSTALL.md) · [Workflow](docs/WORKFLOW.md) · [Supported formats](docs/SUPPORT.md)
 
-Yufeng Zhan · MIT · v1.0.2
+Yufeng Zhan · MIT · v1.0.3
 
 Translation Skills adds a document translation workflow to Codex, Claude Code, OpenCode and Clouds_Coder. Use it for a single file or an ordered collection of manuals, reports, articles, stories or other documents. You choose the files, target language and intended reader.
 
@@ -22,7 +22,7 @@ Tables, captions, footnotes and figure labels belong to the selected content too
 
 ## Get started
 
-You need Python 3.10 or later. PDF output and figure checks use a local Chromium browser. OCR can use Tesseract or macOS Vision; source-reviewed transcription is also available.
+You need Python 3.10 or later. PDF output and figure checks use a local Chromium browser. PDF extraction requires PyMuPDF 1.26.4 or later. PDF scans without recoverable native text remain incomplete; optional non-PDF raster helpers are separate.
 
 ```bash
 git clone https://github.com/FonaTech/Translation_Skills.git
@@ -48,15 +48,21 @@ Then make a request such as:
 
 > Use document-translation to translate /path/to/manual.pdf into Japanese for first-time users. Produce the faithful translation, interpretive edition and source comparison as HTML and PDF. Keep the warnings, tables and figure labels, and list anything unreadable.
 
-## Changes in 1.0.2
+## Changes in 1.0.3
 
-- A resumable workflow controller tracks source review, translation, rendering and release. The client model completes the semantic and visual tasks between script stages.
-- PDF extraction uses an offline model to propose text roles, paragraph links and reading regions. Source geometry, glyphs and font evidence remain available for review; native extraction is still selectable.
-- Figure crops retain nearby text, caption candidates and source coordinates. Checked source corrections refresh the layout map used for reconstruction.
-- An optional font-map recovery tool creates a separate repaired PDF for supported missing Unicode maps, with before/after appearance checks.
-- Pagination and editor updates improve column sizing, figure/caption placement and image handling in exported files.
+- Added native table-cell linking and independent merged-cell topology checks. Supported spans survive HTML pagination and DOCX export.
+- Improved source math glyphs, figure ownership and font-map recovery while retaining original evidence and unresolved findings.
+- Separated repeated margin headers, footers and edge page numbers from body translation while preserving their source records.
+- Added explicit UTF-8 file, console and subprocess handling, with Windows CP936 regression checks.
+- PDF processing now uses native text, font outlines, vectors and geometry only. Unavailable text remains source artwork with an incomplete finding; PDF OCR and page/table transcription are disabled.
 
-See the [changelog](CHANGELOG.md) and [workflow guide](docs/WORKFLOW.md) for details.
+See the [changelog](CHANGELOG.md) and [workflow guide](docs/WORKFLOW.md).
+
+## Standalone translator
+
+The same [1.0.3 Release](https://github.com/FonaTech/Translation_Skills/releases/tag/v1.0.3) also offers **Chronos Document WebUI 1.1.4** as an experimental, separate download. It uses the author's [Project_Chronos](https://github.com/FonaTech/Project_Chronos) translation model for local English-to-Chinese PDF translation and provides a browser interface.
+
+The skill uses the model in your agent client and produces both complete editions. The standalone program runs its own local model and produces a Chinese reading edition plus a bilingual comparison. Each has its own dependencies and installation. See the [program download and startup guide](docs/WEBUI.md).
 
 ## Layout and editing
 
@@ -73,7 +79,8 @@ The skill lives in [`skills/document-translation`](skills/document-translation/S
 ```bash
 python3 -m pip install -r requirements-optional.txt
 python3 tools/validate.py
-python3 -m unittest discover -s tests -v
+python3 -m pip install pytest
+python3 -m pytest tests -q
 python3 tools/checksums.py
 ```
 

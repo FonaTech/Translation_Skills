@@ -109,7 +109,7 @@ def run(output, browser=None):
         check('exported HTML resolves one shared image pool from disk', pooled['decoded'] and pooled['assets']==pooled['unique'] and pooled['images']>pooled['assets'], {k:v for k,v in pooled.items() if k!='text'})
         check('pooled standalone HTML keeps all visible text', pooled['text']==source_text, {'characters':len(pooled['text'])})
         exported.close()
-        pg.evaluate('(html)=>Studio.importHTML(html,"Round trip")', (output / 'cascade-export.html').read_text())
+        pg.evaluate('(html)=>Studio.importHTML(html,"Round trip")', (output / 'cascade-export.html').read_text( encoding='utf-8'))
         restored = pg.evaluate('JSON.parse(JSON.stringify(Studio.state))')
         check('HTML round trip retains current design', saved_state['sections'][0]['design'] == restored['sections'][0]['design'])
         check('HTML round trip retains manual locks', saved_state['sections'][0].get('locks', {}) == restored['sections'][0].get('locks', {}))
@@ -214,7 +214,7 @@ def run(output, browser=None):
         chrome = pg.evaluate('''()=>{const d=document.getElementById('documentFrame').contentDocument;return {header:d.querySelector('.ed-page-header').textContent,footer:d.querySelector('.ed-page-footer').textContent}}''')
         check('manual header and footer reach print pages', 'Review header' in chrome['header'] and 'Review footer' in chrome['footer'], chrome)
         check('candidate search includes 24 distinct settings', pg.evaluate('LayoutAssist.candidates([{design:Studio.defaultDesign()}]).length') == 24)
-        model_data=json.loads((ROOT/'skills/document-translation/assets/models/dom-ranker.json').read_text())
+        model_data=json.loads((ROOT/'skills/document-translation/assets/models/dom-ranker.json').read_text( encoding='utf-8'))
         check('model has actual 24-feature network', model_data['architecture']==[24,12,1] and any(abs(v)>0.01 for row in model_data['weights'] for v in row))
         inside=pg.evaluate('(x)=>LayoutModel.predict(x)',model_data['mean'])
         check('in-envelope inference returns finite score', isinstance(inside.get('score'),(int,float)),inside)
@@ -227,7 +227,7 @@ def run(output, browser=None):
         check('mixed inference compares one common score scale',mixed[0]['score']==mixed[1]['score'] and all(c['model']=='deterministic-rule-fallback' for c in mixed),mixed)
         # Run planner without the model in a fresh realm: no fake replacement.
         no_model=br.new_page()
-        no_model.add_script_tag(content=(ROOT/'skills/document-translation/assets/layout-planner.js').read_text())
+        no_model.add_script_tag(content=(ROOT/'skills/document-translation/assets/layout-planner.js').read_text( encoding='utf-8'))
         fallback=no_model.evaluate('''()=>{const sections=[{design:{size:11,leading:1.7,para:3,head:5,w:210,mx:20,cols:1,gap:7,titleSize:20,captionSize:8,tableSize:8,cellPad:1}}];return LayoutAssist.evaluate({id:'source',sections,changed:0},{pass:true,textPreserved:true,errors:[],pages:[{chars:100,images:0,tables:0,overflow:0,vertical_fill:.7,column_bands:[]}]},sections,1);}''')
         check('missing model uses real deterministic fallback',fallback['safe'] and fallback['model']=='deterministic-rule-fallback' and fallback['model_fallback']=='model-unavailable',fallback)
         independent=no_model.evaluate('''()=>{const original=[{design:{size:11,leading:1.7,para:3,head:5,w:210,mx:20,cols:1,gap:7,titleSize:20,captionSize:8,tableSize:8,cellPad:1},locks:{font:true},html:'<p>unchanged source</p>',nested:{labels:['source','target']}}],before=LayoutAssist.clone(original),options=LayoutAssist.candidates(original),other=LayoutAssist.clone(options[1].sections);options[0].sections[0].design.size=30;options[0].sections[0].locks.font=false;options[0].sections[0].nested.labels[0]='changed';return {source:LayoutAssist.equal(original,before),sibling:LayoutAssist.equal(options[1].sections,other),strings:options.every(c=>c.sections[0].html===original[0].html),objects:options[0].sections[0]!==original[0]&&options[0].sections[0].nested!==original[0].nested};}''')
@@ -248,6 +248,21 @@ def run(output, browser=None):
         check('explicit column span survives readability diagnosis', diagnostics['tables'][0]['span']=='column' and all(i['manual_span_preserved'] for i in diagnostics['issues']), diagnostics)
         guarded = pg.evaluate("()=>LayoutAssist.rank([{id:'dense',safe:true,score:100,changed:0,report:{readability:{severe:2}}},{id:'readable',safe:true,score:1,changed:1,report:{readability:{severe:0}}}]).map(x=>x.id)")
         check('readable safe candidate precedes severe cell density despite learned score', guarded==['readable','dense'], guarded)
+        expansion=pg.evaluate("""()=>LayoutAssist.rank([
+          {id:'compact',safe:true,score:1,changed:0,report:{pages:[{vertical_fill:.9},{vertical_fill:.7}],readability:{severe:0}}},
+          {id:'extra-sparse-page',safe:true,score:100,changed:1,report:{pages:[{vertical_fill:.9},{vertical_fill:.9},{vertical_fill:.2}],readability:{severe:0}}}
+        ]).map(x=>({id:x.id,guard:x.pagination_guard}))""")
+        check('safe compact pagination precedes a higher-scored redundant sparse tail', expansion==[{'id':'compact','guard':False},{'id':'extra-sparse-page','guard':True}], expansion)
+        tiny=pg.evaluate("""async()=>{
+          const d=Studio.defaultDesign();d.size=9;d.leading=1.4;
+          const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35.92 6.22"><path d="M0 1H35V5H0Z"/></svg>';
+          const html='<p data-uid="aspect-unit">A source formula <img class="inline-math" data-math-token="aspect" src="data:image/svg+xml;base64,'+btoa(svg)+'" style="width:5.77492em;height:auto;aspect-ratio:5.77492;object-fit:contain"> remains intact.</p>';
+          Studio.loadState({title:'Formula aspect',sourceCSS:'',sections:[{id:'aspect',html,design:d,overrides:{},locks:{}}]});
+          await new Promise(r=>setTimeout(r,100));await Studio.preview();
+          const doc=document.getElementById('documentFrame').contentDocument;
+          const im=doc.querySelector('#edPages img.inline-math'),r=im.getBoundingClientRect();return {ratio:r.width/r.height,pass:Math.abs((r.width/r.height)/5.77492-1)<.005};
+        }""")
+        check('print-grid alignment preserves tiny inline formula aspect ratios',tiny['pass'],tiny)
         pg.evaluate('(html)=>Studio.importHTML(html,"Undo independence")','<main><p data-uid="undo-unit">An unchanged source sentence.</p></main>')
         def undo_snapshot():
             return pg.evaluate("""()=>{const s=Studio.state.sections[0],d=document.getElementById('documentFrame').contentDocument,p=d.querySelector('[data-uid="undo-unit"]');return {size:s.design.size,locked:s.locks.size===true,text:p?.textContent,painted:p?parseFloat(d.defaultView.getComputedStyle(p).fontSize):null}}""")
@@ -280,12 +295,14 @@ def run(output, browser=None):
         check('queued operations produce no browser exceptions',not page_errors,page_errors)
         result['pass'] = not result['errors']
         br.close()
-    (output / 'editor-regression.json').write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    (output / 'editor-regression.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({'pass':result['pass'], 'errors':result['errors'], 'checks':len(result['checks'])}, ensure_ascii=False))
     return result
 
 
 if __name__ == '__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
     ap = argparse.ArgumentParser()
     ap.add_argument('--output', required=True)
     ap.add_argument('--browser', default=os.environ.get('TRANSLATION_BROWSER'))

@@ -9,7 +9,7 @@ class WorkflowTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):t.init(argparse.Namespace(project=str(self.r),title='Fixture',languages='zh-Hans,ar',style='editorial',page_size='A4',columns=1))
  def tearDown(self):self.tmp.cleanup()
  def seed(self,text='Do not exceed 12.5 V.'):
-  r,m,c=t.project(self.r);f=r/'sources/a.txt';f.write_text(text);c['sources']=[{'id':'D001','name':'a.txt','file':'sources/a.txt','sha256':t.sha(f)}];b=t.add_block(c,'D001','paragraph',{'element':'1'},[text]);t.write(r/'content.json',c);return r,m,c,b
+  r,m,c=t.project(self.r);f=r/'sources/a.txt';f.write_text(text, encoding='utf-8');c['sources']=[{'id':'D001','name':'a.txt','file':'sources/a.txt','sha256':t.sha(f)}];b=t.add_block(c,'D001','paragraph',{'element':'1'},[text]);t.write(r/'content.json',c);return r,m,c,b
  def apply(self,items,**extra):
   f=self.r/'packet.json';t.write(f,{'language':'zh-Hans','items':items,**extra})
   with contextlib.redirect_stdout(io.StringIO()):t.apply(argparse.Namespace(project=str(self.r),packet=str(f)))
@@ -72,7 +72,7 @@ class WorkflowTests(unittest.TestCase):
   self.assertEqual(before,t.source_snap(m,c));b['units'][0]['source']='Changed source';self.assertNotEqual(before,t.source_snap(m,c))
  def test_refinement_changes_presentation_only_and_rejects_text(self):
   import refinement
-  r,m,c,b=self.seed();asset=r/'previews/source.png';asset.parent.mkdir(exist_ok=True);asset.write_text('source evidence');before=t.source_snap(m,c);translation={'zh-Hans':{'faithful':'不得超过12.5 V。','interpretive':'电压不应超过12.5 V。'}};b['units'][0]['translations']=translation;t.write(r/'content.json',c)
+  r,m,c,b=self.seed();asset=r/'previews/source.png';asset.parent.mkdir(exist_ok=True);asset.write_text('source evidence', encoding='utf-8');before=t.source_snap(m,c);translation={'zh-Hans':{'faithful':'不得超过12.5 V。','interpretive':'电压不应超过12.5 V。'}};b['units'][0]['translations']=translation;t.write(r/'content.json',c)
   patch=r/'patch.json';t.write(patch,{'reason':'The source paragraph is an abstract and should span the page.','evidence':['previews/source.png'],'documents':{'D001':{'columns':2}},'blocks':{b['id']:{'presentation':{'role':'abstract','span':'all'}}}})
   with contextlib.redirect_stdout(io.StringIO()):refinement.apply_patch(argparse.Namespace(project=str(r),patch=str(patch)))
   _,m,c=t.project(r);self.assertEqual(before,t.source_snap(m,c));self.assertEqual(c['blocks'][0]['units'][0]['translations'],translation)
@@ -117,7 +117,7 @@ class WorkflowTests(unittest.TestCase):
   r,m,c,b=self.seed();u=b['units'][0];u['translations']={'zh-Hans':{'faithful':'不超过 125 V。','interpretive':'不超过 12.5 V。'}};a=t.audit_data(r,m,c)
   self.assertTrue(any(x['code']=='number-tokens' for x in a['warnings']));self.assertEqual(u['translations']['zh-Hans']['faithful'],'不超过 125 V。')
  def test_hash_change_detected(self):
-  r,m,c,b=self.seed();(r/'sources/a.txt').write_text('Changed');self.assertTrue(any(x['code']=='source-hash' for x in t.audit_data(r,m,c)['errors']))
+  r,m,c,b=self.seed();(r/'sources/a.txt').write_text('Changed', encoding='utf-8');self.assertTrue(any(x['code']=='source-hash' for x in t.audit_data(r,m,c)['errors']))
  def test_table_ids_unique_after_reorder(self):
   r,m,c,b=self.seed();tab=t.add_block(c,'D001','table',{'page':1},[],rows=[]);c['blocks'].remove(tab);x=t.add_block(c,'D001','paragraph',{'page':1},['Other']);c['blocks'].append(tab)
   self.assertEqual(len({z['id'] for z in c['blocks']}),len(c['blocks']))
@@ -154,7 +154,7 @@ class WorkflowTests(unittest.TestCase):
   home=Path(self.tmp.name)/'home';project=Path(self.tmp.name)/'client'
   for target in ['codex','claude','opencode','clouds']:
    dest=install.destinations(target,project,home,None);self.assertFalse(install.install(target,dest)['applied']);self.assertFalse(dest.exists());res=install.install(target,dest,True);self.assertTrue(res['applied']);self.assertTrue((dest/'SKILL.md').exists());res=install.install(target,dest,True);self.assertTrue(Path(res['backup']).exists())
-   if target=='clouds':self.assertIn('runtime_contract:',(dest/'SKILL.md').read_text())
+   if target=='clouds':self.assertIn('runtime_contract:',(dest/'SKILL.md').read_text( encoding='utf-8'))
  def test_installer_symlink_not_followed(self):
   target=Path(self.tmp.name)/'real';target.mkdir();link=Path(self.tmp.name)/'sym';link.symlink_to(target,target_is_directory=True)
   self.assertRaises(ValueError,install.install,'codex',link,True)
@@ -169,9 +169,9 @@ class WorkflowTests(unittest.TestCase):
  def complete_release_fixture(self):
   r,m,c,b=self.seed();u=b['units'][0];u['translations']={l:{'faithful':u['source'],'interpretive':u['source']} for l in m['target_languages']};t.write(r/'content.json',c)
   for l in m['target_languages']:
-   (r/'outputs'/f'{l}-alignment.csv').write_text('unit_id,source,faithful,interpretive')
+   (r/'outputs'/f'{l}-alignment.csv').write_text('unit_id,source,faithful,interpretive', encoding='utf-8')
    for e in m['editions']+['alignment']:
-    for ext in ['html','pdf']:(r/'outputs'/f'{l}-{e}.{ext}').write_text('Owned test artifact')
+    for ext in ['html','pdf']:(r/'outputs'/f'{l}-{e}.{ext}').write_text('Owned test artifact', encoding='utf-8')
   records=[]
   for l in m['target_languages']:
    for e in m['editions']+['alignment']:
@@ -204,7 +204,7 @@ class WorkflowTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):code=t.release(argparse.Namespace(project=str(self.r),zip=None))
   return code,t.read(self.r/'reports/release.json')
  def test_release_complete_fixture_and_stale_pdf(self):
-  r,m,c=self.complete_release_fixture();self.assertEqual(self.release_report()[0],0);(r/'outputs/zh-Hans-faithful.pdf').write_text('Changed artifact');code,report=self.release_report();self.assertEqual(code,1);self.assertIn('render-artifact-stale',[x['code'] for x in report['errors']]);self.assertIn('visual-review-stale',[x['code'] for x in report['errors']])
+  r,m,c=self.complete_release_fixture();self.assertEqual(self.release_report()[0],0);(r/'outputs/zh-Hans-faithful.pdf').write_text('Changed artifact', encoding='utf-8');code,report=self.release_report();self.assertEqual(code,1);self.assertIn('render-artifact-stale',[x['code'] for x in report['errors']]);self.assertIn('visual-review-stale',[x['code'] for x in report['errors']])
  def test_release_requires_alignment_artifacts(self):
   r,m,c=self.complete_release_fixture();(r/'outputs/zh-Hans-alignment.pdf').unlink();self.assertEqual(self.release_report()[0],1)
  def test_release_blocks_open_issues_and_unreviewed_labels(self):

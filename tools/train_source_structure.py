@@ -379,8 +379,8 @@ def main():
               'synthetic_cross_column_positive_examples':sum(x[2].startswith('owned-synthetic') for x in transition_positives),
               'real_cross_column_positive_examples':sum(not x[2].startswith('owned-synthetic') for x in transition_positives),
               'label_contract':'Original synthetic known structure and explicitly source-inspected real annotations. Scores are not calibrated confidence. No source completion; hard geometry gates and coverage checks apply.'}
-    model={'id':'source-structure-1.0.2','version':'1.0.2','seed':a.seed,'feature_revision':s.FEATURE_REVISION,'role_features':s.ROLE_FEATURES,'join_features':s.JOIN_FEATURES,'roles':s.ROLES,'role_head':role,'join_head':join,'role_threshold':.8,'join_threshold':.94,'training':training}
-    report={'version':'1.0.2','model':model['id'],'training':model['training'],'split_audit':split_audit,'heldout_role':evaluate(role,hr,.8),'heldout_join':evaluate(join,hp,.94),'validation_role':evaluate(role,vr,.8),'validation_join':evaluate(join,vp,.94),'test_role':evaluate(role,er,.8),'test_join':evaluate(join,ep,.94),'splits':[{'id':d['id'],'split':d['split'],'label_source':d.get('label_source','not-recorded')} for d in docs],'real_document_generalization':'Real-document test metrics are reported separately; synthetic metrics do not establish source-document correctness.'}
+    model={'id':'source-structure-1.0.3','version':'1.0.3','seed':a.seed,'feature_revision':s.FEATURE_REVISION,'role_features':s.ROLE_FEATURES,'join_features':s.JOIN_FEATURES,'roles':s.ROLES,'role_head':role,'join_head':join,'role_threshold':.8,'join_threshold':.94,'training':training}
+    report={'version':'1.0.3','model':model['id'],'training':model['training'],'split_audit':split_audit,'heldout_role':evaluate(role,hr,.8),'heldout_join':evaluate(join,hp,.94),'validation_role':evaluate(role,vr,.8),'validation_join':evaluate(join,vp,.94),'test_role':evaluate(role,er,.8),'test_join':evaluate(join,ep,.94),'splits':[{'id':d['id'],'split':d['split'],'label_source':d.get('label_source','not-recorded')} for d in docs],'real_document_generalization':'Real-document test metrics are reported separately; synthetic metrics do not establish source-document correctness.'}
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(model,ensure_ascii=False,indent=2,allow_nan=False)+'\n',encoding='utf-8');a.evidence.parent.mkdir(parents=True,exist_ok=True);a.evidence.write_text(json.dumps(report,ensure_ascii=False,indent=2,allow_nan=False)+'\n',encoding='utf-8')
     print(json.dumps({'model':str(a.output),'synthetic_heldout_role_accuracy':report['heldout_role']['accuracy'],
                       'synthetic_heldout_join_accuracy':report['heldout_join']['accuracy'],
@@ -388,4 +388,7 @@ def main():
                       'real_test_role_accuracy':report['test_role']['accuracy'] if er else None,
                       'real_test_join_pair_accuracy':report['test_join']['accuracy'] if ep else None,'training':model['training']}))
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

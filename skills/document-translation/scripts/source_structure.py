@@ -16,7 +16,7 @@ import statistics
 import unicodedata
 
 MODEL_PATH = Path(__file__).resolve().parent.parent / 'assets/models/source-structure.json'
-EXTRACTION_REVISION = '1.0.2-native-rows-21-caption-grid-boundaries'
+EXTRACTION_REVISION = '1.0.3-native-rows-34-table-margin-ownership'
 FEATURE_REVISION = '1.0.1-structure-features-28'
 ROLES = ['body', 'title', 'heading', 'metadata', 'caption', 'reference', 'equation', 'label', 'table', 'list']
 ROLE_FEATURES = ['size_ratio','width','height','left','top','right','bottom','log_length','digit_fraction','uppercase_fraction','letter_fraction','bold','italic','monospace','symbol_font','small_span_fraction','log_spans','line_height_ratio','caption_start','reference_start','metadata_cue','name_initials','list_start','math_fraction','heading_cue','terminal','first_page','font_body_overlap','size_to_max','bad_char','native_caption_context','native_reference_context','preceding_gap','following_gap','short_label','direction_x','direction_y','native_line_position','native_block_log_lines','native_block_mean_length','native_block_height','native_block_width','explicit_caption_label','repeated_furniture','native_block_first_size_ratio','block_heading_cue','block_metadata_cue','table_region','font_doc_fraction','primary_body_font','sans_family','block_contact_context','same_baseline_peers','body_font_size_distance','title_band','numbered_heading','different_block_font','block_max_size_ratio','block_reference_density','block_reference_starts','bare_web_address','after_title_band','before_title_band','reference_section_context','section_heading_context','front_matter_metadata_context','running_header_context','explicit_metadata_label','author_line_context','affiliation_block_context','list_continuation_context','display_equation_context','explicit_heading_label','graphic_context']
@@ -46,7 +46,7 @@ AFFILIATION_WORD = re.compile(r'\b(?:department|faculty|school|university|instit
 COPYRIGHT_NOTICE = re.compile(r'(?:©|copyright|all rights reserved|personal use is permitted|authorized licensed use limited)',re.I)
 PUNCTUATION_FREE_CAPTION = re.compile(r'^\s*(?:FIGURES?\s+[A-Z]?\d+(?:\.\d+)*[a-z]?\s+(?=[A-Z(])|(?:Fig\.|Table)\s*[A-Z]?\d+(?:\.\d+)*[a-z]?\s+(?!Shows?\b|Is\b|Was\b|Presents?\b)(?=[A-Z(])|(?i:fig(?:ure)?s?\.?|图|表|図|圖)\s*[A-Z]?\d+(?:\.\d+)*[a-z]?\s+\([a-z]\))')
 FOOTNOTE_START = re.compile(r'(?:contribut(?:ed|ion)\s+equally|(?:this\s+(?:work|research|material)|the\s+authors?).{0,65}(?:supported|funded)|funding\s+(?:from|by))',re.I)
-BAD_NATIVE_GLYPH = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]')
+BAD_NATIVE_GLYPH = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]')
 HEADING = re.compile(r'^(?:\d+(?:\.\d+)*[.\s]+|[IVX]+\.\s+)?(?:abstract|introduction|results?|discussion|conclusions?|methods?|references|acknowledg\w*|appendix|contents|summary|摘要|引言|结论|参考文献|方法|目录|附录)\b', re.I)
 LIGATURES = str.maketrans({'ﬀ':'ff','ﬁ':'fi','ﬂ':'fl','ﬃ':'ffi','ﬄ':'ffl','ﬅ':'st','ﬆ':'st'})
 
@@ -58,6 +58,22 @@ def digest(value):
 def native_text_damaged(text):
     """Flag control/replacement glyphs; do not guess their intended characters."""
     return bool(BAD_NATIVE_GLYPH.search(text))
+
+
+def visible_math_controls(row):
+    """A whitespace codepoint can name an inked glyph in a PDF math font.
+
+    Preserve its measured source evidence without guessing a Unicode symbol.
+    Ordinary spaces/newlines in prose and code do not satisfy this contract.
+    """
+    return any(MATH_FONT.search(span.get('font','')) and
+        any(c.get('c','') and all(ord(ch)<32 for ch in c['c']) and
+            c.get('bbox') and c['bbox'][2]>c['bbox'][0] and c['bbox'][3]>c['bbox'][1]
+            for c in span.get('chars',[])) for span in row.get('spans',[]))
+
+
+def source_text_present(row):
+    return bool(row.get('text','').strip()) or visible_math_controls(row)
 
 
 def median(values, default=10):
@@ -122,6 +138,31 @@ def numbered_typographic_heading(line,page):
                len(x['text'].strip())>50 for x in page.get('lines',[]))
 
 
+def centered_numbered_capitals(line,page):
+    """Measured numbered small-cap heading before its source body paragraph.
+
+    An exact source-proven blank font advance may stand for spacing in the
+    shape test only. Original text, glyphs and uncertainty remain unchanged.
+    No equation, unknown visible glyph or unmatched short label is admitted.
+    """
+    text = line['text']
+    for span in line.get('spans', []):
+        for char in span.get('chars', []):
+            glyph = char.get('native_glyph', {})
+            if char.get('unicode_unresolved') and glyph.get('empty_outline') and glyph.get('svg'):
+                text = text.replace(char['c'], ' ')
+    text = ' '.join(text.split())
+    if (not re.fullmatch(r'(?:[IVXLCDM]+\.|\d+(?:\.\d+)*\.)\s+[A-Z][A-Z -]{7,90}', text)
+            or len(re.findall(r'[A-Z]{3,}', text)) < 2):
+        return False
+    box=line['bbox'];size=max(1,line['size'])
+    return any(0<=row['bbox'][1]-box[3]<=size*2 and
+               abs((row['bbox'][0]+row['bbox'][2]-box[0]-box[2])/2)<=size*2 and
+               len(row['text'].strip())>40 and re.search(r'[a-z]{3,}',row['text']) and
+               row['bbox'][2]-row['bbox'][0] > (box[2]-box[0])*1.5
+               for row in page['lines'] if row['id']!=line['id'])
+
+
 def list_marker(line,page):
     text=line['text'].strip()
     if not LIST_START.match(text) or REFERENCE.match(text) or caption_start(text) or EXPLICIT_HEADING.fullmatch(text) or SECTION_HEADING.match(text) or numbered_typographic_heading(line,page):return False
@@ -140,7 +181,8 @@ def list_marker(line,page):
 
 
 def text_baseline(line):
-    spans=[s for s in line['spans'] if s.get('text','').strip()]
+    spans=[s for s in line['spans'] if s.get('text','').strip() or
+           visible_math_controls({'spans':[s]})]
     if not spans:return line['bbox'][3]
     largest=max(s.get('size',line['size']) for s in spans)
     main=[s for s in spans if s.get('size',line['size'])>=largest*.88]
@@ -188,7 +230,7 @@ def subfigure_prefix(text):
     return bool(re.match(r'^\s*\([a-z]\)\s+\S.{4,}',text))
 
 
-def physical_rows(native, table_regions=None, heading_regions=None):
+def physical_rows(native, table_regions=None, heading_regions=None, fraction_rules=None):
     """Rejoin same-native-block PDF fragments on one printed text baseline.
 
     Mathematical and rotated fragments stay separate. Native line IDs remain
@@ -318,6 +360,7 @@ def physical_rows(native, table_regions=None, heading_regions=None):
             result.append({**principal,'id':row[0]['id'],'text':''.join(parts),'bbox':union([x['bbox'] for x in row]),'spans':spans,'native_line_ids':[x['id'] for x in row],
                            'row_fragments':[{'native_line_id':x['id'],'text':x['text'],'bbox':x['bbox']} for x in row],
                            'inline_glyph_runs':glyph_runs})
+    result=join_cross_object_prose(result,table_regions,heading_regions)
     # A hanging bibliography number may be serialized in a separate native
     # object. Rejoin only a short bracketed marker and its unique same-baseline
     # text neighbour. Preserve every native line and measured glyph run.
@@ -333,7 +376,304 @@ def physical_rows(native, table_regions=None, heading_regions=None):
         row['row_fragments']=marker.get('row_fragments',[])+row.get('row_fragments',[])
         row['spans']=marker['spans']+row['spans'];row['inline_glyph_runs']=[]
         result.remove(marker)
-    return result
+    result=attach_inline_accents(result)
+    result=attach_detached_inline_fractions(result,fraction_rules or [])
+    return attach_inline_operator_tails(attach_inline_fractions(result, fraction_rules or []))
+
+
+def span_text_offset(row,target):
+    """Locate a measured span in the serialized source without inventing text."""
+    cursor=0
+    for span in row.get('spans',[]):
+        text=span.get('text','').strip()
+        if not text:continue
+        at=row['text'].find(text,cursor)
+        if at<0:return None
+        if span is target:return at
+        cursor=at+len(text)
+    return None
+
+
+def insert_inline_source_group(parent,fragments,at,text,box,evidence):
+    """Move existing glyph transcripts into one protected spatial source unit."""
+    parent['text']=parent['text'][:at]+text+parent['text'][at:]
+    for group in parent.get('inline_spatial_groups',[]):
+        if group['source_start']>=at:group['source_start']+=len(text)
+    parent.setdefault('inline_spatial_groups',[]).append({'text':text,'source_start':at,
+        'bbox':box,'kind':'formula','evidence':evidence,'serialization':'spatial-glyph-transcript',
+        'semantic_transcription':False,'native_line_ids':[lid for f in fragments for lid in f.get('native_line_ids',[f['id']])]})
+    parent['bbox']=union([parent['bbox']]+[f['bbox'] for f in fragments])
+    parent['spans']=[*parent['spans'],*(sp for f in fragments for sp in f['spans'])]
+    parent['native_line_ids']=list(dict.fromkeys(parent.get('native_line_ids',[parent['id']])+[lid for f in fragments for lid in f.get('native_line_ids',[f['id']])]))
+    parent.setdefault('row_fragments',[]).extend(part for f in fragments for part in
+        f.get('row_fragments',[{'native_line_id':f['id'],'text':f['text'],'bbox':f['bbox']}]))
+    parent['inline_glyph_runs']=[]
+
+
+def attach_inline_accents(rows):
+    """Retain a detached source accent over its unique measured prose token."""
+    accents=set('¯ˉ˘˙˚ˇˆ˜⃗̂̄̃̇')
+    for mark in list(rows):
+        text=mark['text'].strip()
+        if not text or len(text)>2 or not all(c in accents for c in text):continue
+        choices=[]
+        for owner in rows:
+            if (owner is mark or owner['native_block']!=mark['native_block'] or
+                len(owner['text'].split())<5 or abs(owner.get('direction',[1,0])[1])>.05):continue
+            for span in owner.get('spans',[]):
+                word=span.get('text','').strip();size=max(1,span.get('size',owner['size']))
+                box=span.get('bbox',owner['bbox']);rise=span.get('origin',[0,box[3]])[1]-text_baseline(mark)
+                if not (word and len(word)<=24 and all(c.isalnum() or c=='_' for c in word) and
+                        .05*size<rise<.7*size and box[0]-.3<=mark['bbox'][0] and
+                        mark['bbox'][2]<=box[2]+.3):continue
+                at=span_text_offset(owner,span)
+                if at is not None:choices.append((owner,span,at,word))
+        if len(choices)!=1:continue
+        owner,span,at,word=choices[0]
+        insert_inline_source_group(owner,[mark],at+len(word),text,union([span['bbox'],mark['bbox']]),
+                                   ['source-accent-over-unique-prose-token'])
+        # Protect the complete identifier, including the original source word.
+        group=owner['inline_spatial_groups'][-1];group['source_start']=at;group['text']=word+text
+        rows.remove(mark)
+    return rows
+
+
+def attach_detached_inline_fractions(rows,rules):
+    """Bind a complete detached stack only inside a measured prose-span gap.
+
+    Both numerator and denominator must exist, with source mathematical fonts
+    or italic runs and an actual fraction rule. No slash, symbol or missing
+    operand is generated. Competing prose owners remain separate for review.
+    """
+    for left,y,right in rules:
+        choices=[]
+        for owner in rows:
+            size=max(1,owner['size']);base=text_baseline(owner)
+            if not (len(owner['text'].split())>=5 and len(owner['text'])>=24 and
+                    abs(owner.get('direction',[1,0])[1])<.05 and
+                    y-size*.3<=base<=y+size*.8 and right-left<=size*6):continue
+            spans=[s for s in owner['spans'] if s.get('text','').strip()]
+            before=[s for s in spans if left-size*1.5<=s['bbox'][2]<=left+.5]
+            after=[s for s in spans if right-.5<=s['bbox'][0]<=right+size*1.5]
+            if not before or not after:continue
+            if any(min(s['bbox'][2],right)-max(s['bbox'][0],left)>.5 for s in spans):continue
+            following=min(after,key=lambda s:s['bbox'][0]);at=span_text_offset(owner,following)
+            if at is None:continue
+            fragments=[r for r in rows if r is not owner and r['native_block']==owner['native_block'] and
+                r['text'].strip() and len(r['text'])<=32 and len(re.findall(r'[A-Za-z]{3,}',r['text']))<=1 and
+                not BAD_NATIVE_GLYPH.search(r['text']) and abs(r.get('direction',[1,0])[1])<.05 and
+                left-.6<=r['bbox'][0] and r['bbox'][2]<=right+.6 and
+                y-size*1.5<=text_baseline(r)<=y+size*1.5 and r['size']<=size*1.1 and
+                any(MATH_FONT.search(s.get('font','')) or s.get('flags',0)&2 for s in r['spans'])]
+            above=[r for r in fragments if text_baseline(r)<y];below=[r for r in fragments if text_baseline(r)>y]
+            if above and below:choices.append((owner,at,above,below))
+        if len(choices)!=1:continue
+        owner,at,above,below=choices[0];fragments=sorted(above,key=lambda r:r['bbox'][0])+sorted(below,key=lambda r:r['bbox'][0])
+        text=''.join(r['text'].strip() for r in fragments)
+        insert_inline_source_group(owner,fragments,at,text+' ',union([r['bbox'] for r in fragments]+[[left,y-.3,right,y+.3]]),
+                                   ['measured-inline-fraction','source-fraction-rule','detached-stack-inside-unique-prose-span-gap'])
+        owner['inline_spatial_groups'][-1]['text']=text
+        for fragment in fragments:rows.remove(fragment)
+    return rows
+
+
+def join_cross_object_prose(rows, table_regions=None, heading_regions=None):
+    """Recover repeated prose seams using glyph geometry, never missing words.
+
+    Some PDF writers split every printed line at an arbitrary vertical seam,
+    repeating its boundary glyph in both objects. Require multiple baselines of
+    corroboration. Consolidate only identically mapped, coincident source glyphs;
+    retain all original IDs and record each consolidation in the row evidence.
+    """
+    cells=[c for t in (table_regions or []) for c in t.get('cells',[]) if c]
+    def zone(row, boxes):
+        b=row['bbox'];x=(b[0]+b[2])/2;y=text_baseline(row)
+        return next((i for i,c in enumerate(boxes) if c[0]<=x<=c[2] and c[1]<=y<=c[3]),None)
+    def atoms(row):
+        return [{**c,'native_line_id':row['id'],'_span':span}
+                for span in row.get('spans',[]) for c in span.get('chars',[])]
+    candidates=[];heading_seams=set()
+    for i,a in enumerate(rows):
+        if not a['text'].strip() or abs(a['direction'][1])>.05:continue
+        for b in rows[i+1:]:
+            if a['native_block']==b['native_block'] or a['font']!=b['font']:continue
+            scale=max(1,a['size'],b['size'])
+            if (abs(a['size']-b['size'])>scale*.1 or
+                abs(text_baseline(a)-text_baseline(b))>scale*.2 or
+                abs(b['direction'][1])>.05 or
+                any(MATH_FONT.search(sp.get('font','')) for row in [a,b]
+                    for sp in row['spans'] if sp.get('text','').strip())):continue
+            left,right=sorted([a,b],key=lambda r:r['bbox'][0])
+            gap=right['bbox'][0]-left['bbox'][2]
+            if not -scale*1.5<=gap<=scale*.6:continue
+            if any(zone(a,boxes)!=zone(b,boxes) for boxes in [cells,heading_regions or []]):continue
+            if caption_start(right['text']) or subfigure_prefix(right['text']):continue
+            text=left['text']+' '+right['text']
+            heading=bool(re.match(r'^\s*(?:[IVXLC]+\.|\d+(?:\.\d+)*\.?)\s+\S',left['text']) and
+                         left['text'].strip().isupper() and right['text'].strip().isupper())
+            if not heading and (len(text)<40 or len(re.findall(r'[A-Za-z]{3,}',text))<5):continue
+            if any(not sp.get('chars') or ''.join(c['c'] for c in sp['chars'])!=sp['text']
+                   for row in [a,b] for sp in row['spans']):continue
+            candidates.append((left,right,scale))
+            if heading:heading_seams.add((left['id'],right['id']))
+    consumed=set();replacement={}
+    for left,right,scale in candidates:
+        if left['id'] in consumed or right['id'] in consumed:continue
+        seam=(left['bbox'][2]+right['bbox'][0])/2
+        peers=[(a,b) for a,b,sz in candidates if
+               abs((a['bbox'][2]+b['bbox'][0])/2-seam)<scale*1.5 and
+               scale*.7<abs(text_baseline(a)-text_baseline(left))<scale*6 and
+               a['font']==left['font'] and abs(sz-scale)<scale*.1]
+        explicit_heading=(left['id'],right['id']) in heading_seams
+        caption_seam=caption_start(left['text']) and right['bbox'][0]<left['bbox'][2]
+        if len(peers)<2 and not explicit_heading and not caption_seam:continue
+        aa=atoms(left);bb=atoms(right);duplicates=[];retained=[];conflict=False
+        for atom in bb:
+            matched=None;collides=False
+            for old in aa:
+                x,y=atom['bbox'],old['bbox']
+                area=max(0,min(x[2],y[2])-max(x[0],y[0]))*max(0,min(x[3],y[3])-max(x[1],y[1]))
+                ratio=area/max(.01,min((x[2]-x[0])*(x[3]-x[1]),(y[2]-y[0])*(y[3]-y[1])))
+                if ratio>.85 and atom['c']==old['c'] and max(abs(u-v) for u,v in zip(x,y))<scale*.04:
+                    matched=old;break
+                if ratio>.3 and atom['c'].strip() and old['c'].strip():collides=True
+            if matched:
+                duplicates.append({'c':atom['c'],'bbox':atom['bbox'],
+                    'native_line_id':right['id'],'same_as_native_line_id':left['id']})
+            else:
+                conflict=conflict or collides
+                retained.append(atom)
+        if conflict:continue
+        # A single-line caption has no repeated baselines. Its explicit source
+        # prefix and coincident boundary glyph must both establish continuity.
+        if len(peers)<2 and not explicit_heading and not duplicates:continue
+        glyphs=sorted(aa+retained,key=lambda c:(c['bbox'][0],c['bbox'][1]));parts=[];spans=[];previous=None
+        for atom in glyphs:
+            if (previous and atom['native_line_id']!=previous['native_line_id'] and
+                atom['bbox'][0]-previous['bbox'][2]>.65 and
+                not atom['c'].isspace() and not previous['c'].isspace()):parts.append(' ')
+            parts.append(atom['c'])
+            span={**{k:v for k,v in atom['_span'].items() if k not in {'chars','text','bbox','origin'}},
+                          'text':atom['c'],'chars':[{k:v for k,v in atom.items() if k not in {'_span','native_line_id'}}],
+                          'bbox':atom['bbox'],'origin':atom.get('origin',atom['_span'].get('origin'))}
+            # Preserve original run lengths for typography features. Splitting
+            # every character into a new span makes ordinary italic prose look
+            # like a sequence of one-letter mathematical variables.
+            if previous and previous['_span'] is atom['_span']:
+                spans[-1]['text']+=atom['c'];spans[-1]['chars'].extend(span['chars'])
+                spans[-1]['bbox']=union([spans[-1]['bbox'],atom['bbox']])
+            else:spans.append(span)
+            previous=atom
+        principal=max([left,right],key=lambda row:len(row['text']))
+        joined={**principal,'id':left['id'],'text':''.join(parts),'bbox':union([left['bbox'],right['bbox']]),
+                'spans':spans,'native_line_ids':left.get('native_line_ids',[left['id']])+right.get('native_line_ids',[right['id']]),
+                'row_fragments':[f for row in [left,right] for f in row.get('row_fragments',
+                    [{'native_line_id':row['id'],'text':row['text'],'bbox':row['bbox']}])],
+                'source_assembly':{'method':'explicit-heading-seam' if explicit_heading else 'caption-coincident-glyph-seam' if caption_seam and len(peers)<2 else 'repeated-cross-object-prose-seam','corroborating_baselines':len(peers),
+                                   'coincident_source_glyphs':duplicates,'generated_characters':False},
+                'inline_glyph_runs':[]}
+        replacement[left['id']]=joined;consumed.update([left['id'],right['id']])
+    return [replacement[row['id']] if row['id'] in replacement else row
+            for row in rows if row['id'] not in consumed or row['id'] in replacement]
+
+
+def attach_inline_fractions(rows, rules):
+    """Bind stacked source glyphs to prose only with a measured fraction rule.
+
+    This retains the glyph transcript and source artwork, never infers equation
+    syntax. Repeated text or competing owners remain unresolved for review.
+    """
+    def math_fragment(row):
+        spans=[s for s in row.get('spans',[]) if s.get('text','').strip()]
+        text=''.join(s.get('text','') for s in spans).strip()
+        return bool(spans and text and len(text)<=32 and not BAD_NATIVE_GLYPH.search(text) and
+                    re.fullmatch(r'[A-Za-z0-9+−=()\[\]{}.,|]+',text) and
+                    all(MATH_FONT.search(s.get('font','')) for s in spans))
+    for fragment in list(rows):
+        if not any(fragment is r for r in rows):continue
+        if not math_fragment(fragment) or len(fragment.get('spans',[]))>3:continue
+        choices=[];fb=fragment['bbox']
+        for parent in rows:
+            if parent is fragment or parent.get('native_block')!=fragment.get('native_block') or len(parent.get('text',''))<24:continue
+            size=max(1,parent['size']);base=text_baseline(parent)
+            if fragment['size']>size*.9 or abs(base-text_baseline(fragment))>size*.9:continue
+            if abs(parent.get('direction',[1,0])[1])>.05 or abs(fragment.get('direction',[1,0])[1])>.05:continue
+            for left,y,right in rules:
+                if not (left-.5<=fb[0] and fb[2]<=right+.5 and text_baseline(fragment)<y<base+size*.2):continue
+                if not 0<=y-fb[1]<=size*1.3 or right-left>size*8:continue
+                # Include the whole denominator, including roman subscripts.
+                denominator=[sp for sp in parent.get('spans',[]) if sp.get('text','').strip() and sp.get('bbox') and
+                    sp.get('size',size)<=size*.9 and left-.5<=sp['bbox'][0] and sp['bbox'][2]<=right+.5 and
+                    y<sp.get('origin',[0,sp['bbox'][3]])[1]<=y+size*1.4 and sp['bbox'][1]>=y-size*.15]
+                if not denominator:continue
+                denominator.sort(key=lambda sp:(sp['bbox'][0],sp['bbox'][1]))
+                box=union([sp['bbox'] for sp in denominator]);label=''.join(sp['text'] for sp in denominator).strip()
+                if not label or BAD_NATIVE_GLYPH.search(label):continue
+                overlap=max(0,min(fb[2],box[2])-max(fb[0],box[0]))/max(1,min(fb[2]-fb[0],box[2]-box[0]))
+                if overlap<.6 or not box[0]-.5<=(fb[0]+fb[2])/2<=box[2]+.5:continue
+                starts=[];cursor=0
+                while True:
+                    at=parent['text'].find(label,cursor)
+                    if at<0:break
+                    starts.append(at);cursor=at+1
+                if len(starts)!=1:continue
+                choices.append((parent,box,starts[0],label,[left,y-.3,right,y+.3]))
+        unique={(id(p),at,label,tuple(rule)):(p,box,at,label,rule) for p,box,at,label,rule in choices}
+        if len(unique)!=1:continue
+        parent,denominator,at,label,rule=next(iter(unique.values()))
+        atom=fragment['text'].strip()+label
+        if parent['text'][at:at+len(label)]!=label:continue
+        parent['text']=parent['text'][:at]+atom+parent['text'][at+len(label):]
+        for group in parent.get('inline_spatial_groups',[]):
+            if group['source_start']>=at:group['source_start']+=len(atom)-len(label)
+        parent.setdefault('inline_spatial_groups',[]).append({'text':atom,'source_start':at,
+            'bbox':union([fragment['bbox'],denominator,rule]),'kind':'formula',
+            'evidence':['measured-inline-fraction','source-fraction-rule'],
+            'serialization':'spatial-glyph-transcript','semantic_transcription':False,'fraction_rule':[rule[0],(rule[1]+rule[3])/2,rule[2]],
+            'native_line_ids':fragment.get('native_line_ids',[fragment['id']])})
+        parent['bbox']=union([parent['bbox'],fragment['bbox']])
+        parent['spans']=[*parent['spans'],*fragment['spans']]
+        parent['native_line_ids']=list(dict.fromkeys(parent.get('native_line_ids',[parent['id']])+fragment.get('native_line_ids',[fragment['id']])))
+        parent.setdefault('row_fragments',[]).extend(fragment.get('row_fragments',[{'native_line_id':fragment['id'],'text':fragment['text'],'bbox':fragment['bbox']}]))
+        parent['inline_glyph_runs']=[]
+        rows.remove(fragment)
+    return rows
+
+
+def attach_inline_operator_tails(rows):
+    """Reunite a split inline operator tail on its measured prose baseline.
+
+    PDF objects may separate a sum's lower limit and right-hand product from
+    its narrative line. Native glyphs and IDs survive; no math is transcribed.
+    A following line or an ambiguous prose owner remains a separate fragment.
+    """
+    for fragment in list(rows):
+        if not any(fragment is r for r in rows):continue
+        text=fragment['text'].strip()
+        if not text or len(text)>40 or len(re.findall(r'[A-Za-z]{3,}',text))>1:continue
+        choices=[]
+        for parent in rows:
+            if parent is fragment or len(parent['text'])<25 or len(re.findall(r'[A-Za-z]{3,}',parent['text']))<3:continue
+            if not any(op in parent['text'] for op in '∑∏∫'):continue
+            size=max(1,max(sp.get('size',parent['size']) for sp in parent.get('spans',[]) or [{}]))
+            if abs(parent.get('direction',[1,0])[1])>.05 or abs(fragment.get('direction',[1,0])[1])>.05:continue
+            if abs(text_baseline(parent)-text_baseline(fragment))>size*.3:continue
+            if not parent['bbox'][2]-size*1.3<=fragment['bbox'][0]<=parent['bbox'][2]+size*.8:continue
+            if fragment['bbox'][2]<=parent['bbox'][2]+size*.3:continue
+            if re.search(r'[.!?]\s*$',parent['text']):continue
+            choices.append(parent)
+        if len(choices)!=1:continue
+        parent=choices[0]
+        original_fragment={'native_line_id':parent['id'],'text':parent['text'],'bbox':parent['bbox'][:]}
+        parent['text']=parent['text'].rstrip()+' '+text
+        parent['bbox']=union([parent['bbox'],fragment['bbox']])
+        parent['spans']=[*parent.get('spans',[]),*fragment.get('spans',[])]
+        parent['native_line_ids']=list(dict.fromkeys(parent.get('native_line_ids',[parent['id']])+fragment.get('native_line_ids',[fragment['id']])))
+        parent.setdefault('row_fragments',[original_fragment]).extend(fragment.get('row_fragments',[{'native_line_id':fragment['id'],'text':fragment['text'],'bbox':fragment['bbox']}]))
+        parent['inline_glyph_runs']=[]
+        parent['inline_operator_tail_evidence']={'native_line_id':fragment['id'],'method':'same-baseline-source-operator-tail','generated_nonspace_characters':False,'whitespace_recovered':True}
+        rows.remove(fragment)
+    return rows
 
 
 def raw_page(page, detect_tables=False):
@@ -359,6 +699,16 @@ def raw_page(page, detect_tables=False):
                           'text':text, 'bbox':list(line['bbox']), 'direction':list(line.get('dir',[1,0])),
                           'wmode':line.get('wmode',0), 'spans':spans, 'size':float(principal.get('size',10)),
                           'font':principal.get('font',''), 'flags':principal.get('flags',0)})
+    if __package__:
+        from .pdf_text_recovery import recover_lines
+    else:
+        from pdf_text_recovery import recover_lines
+    glyph_recovery=recover_lines(page,lines)
+    if __package__:
+        from .source_text_layers import annotate_visibility,deduplicate
+    else:
+        from source_text_layers import annotate_visibility,deduplicate
+    annotate_visibility(page,lines)
     tables=[];table_error=None
     if detect_tables:
         try:
@@ -366,7 +716,7 @@ def raw_page(page, detect_tables=False):
                 if table.row_count>=2 and table.col_count>=2:tables.append({'bbox':list(table.bbox),'rows':table.row_count,'columns':table.col_count,'cells':[list(c) if c else None for c in table.cells]})
         except Exception as error:table_error=str(error)
     tables,rejected_tables=filter_table_regions(lines,tables,page.rect.width,page.rect.height)
-    structure_regions=[];graphic_regions=[];heading_regions=[]
+    structure_regions=[];graphic_regions=[];heading_regions=[];fraction_rules=[]
     try:
         horizontal=[];vertical=[]
         for drawing in page.get_drawings():
@@ -391,6 +741,7 @@ def raw_page(page, detect_tables=False):
                     horizontal.append((min(a.x,b.x),a.y,max(a.x,b.x)))
                 elif abs(a.x-b.x)<=.6 and abs(a.y-b.y)>=8:
                     vertical.append((a.x,min(a.y,b.y),max(a.y,b.y)))
+        fraction_rules=list(horizontal)
         horizontal=coalesce_horizontal_rules(horizontal,page.rect.width)
         candidates=[]
         for index,(left,top,right) in enumerate(horizontal):
@@ -424,10 +775,13 @@ def raw_page(page, detect_tables=False):
                     graphic_regions.append([rect.x0,rect.y0,rect.x1,rect.y1])
     except Exception as error:
         table_error=table_error or str(error)
+    physical,deduplication=deduplicate(physical_rows(lines,tables,heading_regions,fraction_rules))
     return {'page':page.number+1,'width':page.rect.width,'height':page.rect.height,'rotation':page.rotation,
-            'cropbox':list(page.cropbox),'lines':physical_rows(lines,tables,heading_regions),'native_lines':lines,'raw_sha256':digest(lines),
+            'cropbox':list(page.cropbox),'lines':physical,'native_lines':lines,'raw_sha256':digest(lines),
             'table_regions':tables,'rejected_table_regions':rejected_tables,'structure_regions':structure_regions,'graphic_regions':graphic_regions,
-            'heading_regions':heading_regions,
+            'heading_regions':heading_regions,'fraction_rules':fraction_rules,'glyph_recovery':glyph_recovery,
+            'text_layer_deduplication':[record for record in deduplication if not record.get('review_required')],
+            'text_layer_alternates':[record for record in deduplication if record.get('review_required')],
             'table_detection_error':table_error,'extraction_revision':EXTRACTION_REVISION}
 
 
@@ -544,6 +898,10 @@ def raised_footnote_marker(line):
 
 
 def document_profile(pages):
+    if __package__:
+        from .source_furniture import tracks as furniture_tracks
+    else:
+        from source_furniture import tracks as furniture_tracks
     sizes = Counter(); fonts = Counter(); words = Counter(); max_size = 0; furniture=Counter()
     for page in pages:
         furniture.update({key for line in page['lines'] if (key:=furniture_key(line,page))})
@@ -580,6 +938,14 @@ def document_profile(pages):
     if pages and title_bands:
         first=pages[0]
         cutoff=[x['bbox'][1] for x in first['lines'] if ABSTRACT_START.search(x['text'])]
+        # A chapter excerpt may start at physical PDF page one and have no
+        # abstract. Numbered section headings are an explicit end of front
+        # matter; unfinished prose before a display is not author metadata.
+        cutoff.extend(x['bbox'][1] for x in first['lines'] if
+            x['bbox'][1]>title_bands[1] and
+            (x.get('flags',0)&16 or 'bold' in font_key(x.get('font',''))) and
+            x['size']>=size*.95 and
+            re.match(r'^\s*\d+(?:\.\d+)+\s+[A-Z]',x['text']))
         if not cutoff:
             blocks={}
             for line in first['lines']:blocks.setdefault(line['native_block'],[]).append(line)
@@ -590,7 +956,8 @@ def document_profile(pages):
                     cutoff.append(min(line['bbox'][1] for line in block))
         if cutoff:front_matter_bottom=min(cutoff)
     return {'body_size':size,'body_fonts':[x for x,_ in fonts.most_common(3)],'max_size':max_size or size,
-            'native_words':sorted(words),'repeated_furniture':[k for k,n in furniture.items() if n>=2],'font_histogram':dict(fonts),'size_histogram':dict(sizes),'title_band':title_bands,'front_matter_bottom':front_matter_bottom}
+            'native_words':sorted(words),'repeated_furniture':[k for k,n in furniture.items() if n>=2],
+            'furniture_tracks':furniture_tracks(pages),'font_histogram':dict(fonts),'size_histogram':dict(sizes),'title_band':title_bands,'front_matter_bottom':front_matter_bottom}
 
 
 def captioned_table_boxes(page):
@@ -819,7 +1186,7 @@ def role_features(line, page, profile):
                      x['bbox'][1]>bb[3] and x['bbox'][0]-size*1.5<=(bb[0]+bb[2])/2<=x['bbox'][2]+size*1.5]
     source_figure_band=False
     # Control glyphs are excluded only from this cue test, never source text.
-    cue_text=re.sub(r'[\x00-\x1f\ufffd]','',text).strip()
+    cue_text=re.sub(r'[\x00-\x1f\x7f-\x9f\ufffd]','',text).strip()
     subfigure_marker=bool(re.fullmatch(r'\([a-z]\)',cue_text))
     regular_prose_block=(sum(len(x['text'].strip())>35 for x in peers)>=3 and len(block_text)>180 and
                          sum(terminal_sentence(x['text']) for x in peers)>=1 and
@@ -919,13 +1286,16 @@ def load_model(path=None):
     p=Path(path) if path else MODEL_PATH
     if not p.exists():
         return None
-    model=json.loads(p.read_text())
+    model=json.loads(p.read_text( encoding='utf-8'))
     if model.get('role_features')!=ROLE_FEATURES or model.get('join_features')!=JOIN_FEATURES or model.get('roles')!=ROLES or model.get('feature_revision')!=FEATURE_REVISION:
         raise ValueError('Source structure model feature contract mismatch.')
     validate_head(model.get('role_head'),len(ROLE_FEATURES),len(ROLES))
     validate_head(model.get('join_head'),len(JOIN_FEATURES),2)
     if model.get('region_head'):
-        import structure_regions as regions
+        if __package__:
+            from . import structure_regions as regions
+        else:
+            import structure_regions as regions
         region=model['region_head']
         if region.get('revision')!=regions.REVISION or region.get('features')!=regions.FEATURES or region.get('classes')!=regions.CLASSES:
             raise ValueError('Source region model feature contract mismatch.')
@@ -1302,7 +1672,7 @@ def candidate_pairs(lines,width=None,height=None,roles=None):
 
 def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
     model=load_model(model_path);lines=page['lines'];excluded=dict(excluded or {})
-    excluded.update({x['id']:'native-whitespace-only' for x in lines if not x['text'].strip()})
+    excluded.update({x['id']:'native-whitespace-only' for x in lines if not source_text_present(x)})
     eligible=[x for x in lines if x['id'] not in excluded]
     features=[role_features(x,page,profile) for x in eligible]
     probabilities=predict_many(model['role_head'],features) if model else [[1]+[0]*(len(ROLES)-1) for _ in eligible]
@@ -1318,7 +1688,10 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
         if not accepted:issues.append({'code':'structure-role-review','line_ids':[line['id']],'message':'Uncertain native-line role; preserved with provisional presentation, not certified.'})
     regions=[];region_context={};region_relations=[]
     if model and model.get('region_head'):
-        import structure_regions as region_model
+        if __package__:
+            from . import structure_regions as region_model
+        else:
+            import structure_regions as region_model
         decision_map={r['line_id']:r for r in decisions}
         region_context,_=region_model.refine(eligible,page,profile,decision_map,model['region_head'],predict_many)
         rolemap={lid:row['assigned_role'] for lid,row in decision_map.items()}
@@ -1326,7 +1699,14 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
     # Preserve the glyph unchanged, but require source inspection before merging.
     decision_map={r['line_id']:r for r in decisions}
     for line in eligible:
-        if native_text_damaged(line['text']):
+        for alternate in line.get('alternate_text_layers', []):
+            decision_map[line['id']]['review_required']=True
+            decision_map[line['id']]['content_integrity']='competing-source-text-layers'
+            issues.append({'code':'structure-competing-text-layers','line_ids':[line['id']],
+                           'alternative_native_line_ids':alternate['native_line_ids'],
+                           'method':alternate['method'],'conflict_resolved':False,
+                           'message':'Unchanged visible native text is the reading primary; conflicting coincident hidden source text remains in the native ledger and alternate record. No semantic correction or OCR was performed.'})
+        if native_text_damaged(line['text']) or any(c.get('unicode_unresolved') for span in line['spans'] for c in span.get('chars',[])):
             decision_map[line['id']]['review_required']=True
             decision_map[line['id']]['content_integrity']='unresolved-native-glyph'
             issues.append({'code':'structure-native-glyph-review','line_ids':[line['id']],
@@ -1334,13 +1714,19 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
     # Native objects may mix a bold heading with a complete body paragraph.
     # Keep that visual boundary even when their font size is identical.
     for line in eligible:
+        if centered_numbered_capitals(line,page):
+            decision_map[line['id']].update(assigned_role='heading',semantic_role='heading',
+                                           rule='measured-centered-numbered-capitals-before-prose')
         if rolemap[line['id']]=='body' and line.get('flags',0)&16 and len(line['text'])<120 and not terminal_sentence(line['text']):
             following=[x for x in eligible if x['native_block']==line['native_block'] and 0<text_baseline(x)-text_baseline(line)<line['size']*1.8 and not x.get('flags',0)&16]
             if following:decision_map[line['id']].update(assigned_role='heading',semantic_role='heading',rule='measured-bold-heading-before-normal-prose')
         if re.match(r'^\s*(?:References|Bibliography)\s*:',line['text'],re.I):
             decision_map[line['id']].update(assigned_role='reference',semantic_role='reference',review_required=False,rule='explicit-inline-reference-heading')
     if model and model.get('region_head'):
-        import figure_learning
+        if __package__:
+            from . import figure_learning
+        else:
+            import figure_learning
         figure_learning.refine(page,profile,decisions)
         rolemap={r['line_id']:r['assigned_role'] for r in decisions}
         regions=region_model.structured_groups(eligible,decision_map,region_context)
@@ -1364,7 +1750,35 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
     for group in ref_groups:
         if len(group)>1:regions.append({'id':'reference-'+group[0]['id'],'kind':'reference',
             'representation':'source-bibliography','bbox':union([x['bbox'] for x in group]),'members':group})
-    import structure_regions as source_regions
+    if __package__:
+        from .structure_tables import groups as table_groups, unresolved_groups
+    else:
+        from structure_tables import groups as table_groups, unresolved_groups
+    detected_tables=table_groups(page,eligible,decision_map)
+    detected_tables.extend(unresolved_groups(page,eligible,decision_map,detected_tables))
+    if __package__:
+        from .source_furniture import classify as furniture_disposition
+    else:
+        from source_furniture import classify as furniture_disposition
+    furniture_ids=set()
+    for line in eligible:
+        evidence=furniture_disposition(line,page,profile,decision_map[line['id']])
+        if evidence:
+            furniture_ids.add(line['id'])
+            decision_map[line['id']].update(assigned_role='metadata',semantic_role='running-furniture',
+                furniture=evidence,rule=evidence['rule'],review_required=False)
+    if furniture_ids:
+        regions=[r for r in regions if not any(x['id'] in furniture_ids for x in r['members'])]
+    rolemap={lid:row['assigned_role'] for lid,row in decision_map.items()}
+    # Table ownership takes precedence over incidental equation/label regions
+    # inside its cells. Keep each physical source line exactly once.
+    table_ids={r['id'] for table in detected_tables for r in table['members']}
+    regions=[region for region in regions if not any(r['id'] in table_ids for r in region['members'])]
+    regions.extend(detected_tables)
+    if __package__:
+        from . import structure_regions as source_regions
+    else:
+        import structure_regions as source_regions
     overlap_relations=source_regions.overlapping_layers(eligible)
     region_relations.extend(overlap_relations)
     for relation in overlap_relations:
@@ -1396,7 +1810,21 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
                 furniture_key(b,page) in profile.get('repeated_furniture',[]) and
                 font_key(a['font'])!=font_key(b['font'])):gate='running-furniture-typographic-boundary'
         if a['id'] in structured_ids or b['id'] in structured_ids:gate='spatial-or-literal-region-boundary'
-        elif (a['id'] in review_ids or b['id'] in review_ids) and not uncertain_title_chain:gate='uncertain-role-requires-review'
+        elif (a['id'] in furniture_ids)!=(b['id'] in furniture_ids):gate='page-furniture-reading-content-boundary'
+        elif (a['id'] in review_ids or b['id'] in review_ids) and not uncertain_title_chain:
+            # A damaged inline glyph must keep its integrity warning, but need
+            # not split an otherwise measured, high-confidence prose paragraph.
+            # Formula isolation runs after composition and still refuses any
+            # unprotected corrupt character before translation. No glyph is guessed.
+            damaged_prose = (gate is None and rolemap[a['id']]==rolemap[b['id']]=='body' and
+                a['native_block']==b['native_block'] and not transition and score>=.98 and
+                .35*max(a['size'],b['size'])<=text_baseline(b)-text_baseline(a)<=1.8*max(a['size'],b['size']) and
+                abs(a['bbox'][0]-b['bbox'][0])<max(a['size'],b['size'])*1.2 and
+                abs(math.log(max(.1,a['size'])/max(.1,b['size'])))<.15 and
+                all(decision_map[row['id']].get('content_integrity')=='unresolved-native-glyph' and
+                    len(re.findall(r'\b[A-Za-z]{2,}\b',row['text']))>=4
+                    for row in (a,b) if row['id'] in review_ids))
+            if not damaged_prose:gate='uncertain-role-requires-review'
         record={'from':a['id'],'to':b['id'],'join_score':round(score,6),'joined':False,'gate':gate};relations.append(record)
         if gate is None and model and score>=model.get('join_threshold',.94):candidates.append((score,a,b,record))
     # A path cover enforces at most one predecessor/successor and prevents cycles.
@@ -1422,7 +1850,8 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
         groups.append({'bbox':union([x['bbox'] for x in head]),'source_bbox':union([x['bbox'] for x in group]),'members':group})
     for region in regions:
         groups.append({'bbox':region['bbox'],'source_bbox':region['bbox'],'members':region['members'],
-                       'semantic_role':region['kind'],'region_id':region['id'],'representation':region['representation']})
+                       'semantic_role':region['kind'],'region_id':region['id'],'representation':region['representation'],
+                       **({k:region[k] for k in ['cells','header_rows','column_widths','evidence']} if region.get('representation')=='source-table-cells' else {})})
     narrative=[r for r in groups if rolemap[r['members'][0]['id']]=='body' and len(' '.join(x['text'] for x in r['members']))>100]
     narrative_box=union([r['bbox'] for r in narrative]) if narrative else None
     peripheral=[r for r in groups if r.get('semantic_role')=='footnote' or all(rolemap[x['id']]=='metadata' for x in r['members']) and
@@ -1446,6 +1875,12 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
         block={'type':'heading' if role in {'title','heading'} else 'paragraph','role':role,'level':1 if role=='title' else 2,'text':text,'bbox':region['source_bbox'],'line_ids':[x['id'] for x in group],'native_line_ids':[lid for x in group for lid in x.get('native_line_ids',[x['id']])],'operations':operations,'typography':typography,'review_required':bool(review_ids.intersection(x['id'] for x in group)) or bool(ambiguities)}
         if semantic:block['semantic_role']=semantic
         if region.get('region_id'):block['region_id']=region['region_id']
+        if region.get('representation')=='source-table-cells':
+            block.update(type='table',representation=region['representation'],
+                         cells=region['cells'],header_rows=region['header_rows'],
+                         column_widths=region['column_widths'],cell_evidence=region['evidence'])
+        elif region.get('representation')=='source-table-artwork':
+            block.update(type='table',representation=region['representation'])
         if semantic in {'code','equation'}:
             block['representation']=region.get('representation')
             block['source_lines']=[{'id':x['id'],'text':x['text'],'bbox':x['bbox'],'spans':x['spans']} for x in group]
@@ -1458,4 +1893,4 @@ def reconstruct(page,profile,excluded=None,order='auto',model_path=None):
     coverage['native_unexpected']=sorted(set(native_assigned)-set(native_expected))
     coverage['pass']=not any(coverage[k] for k in ['missing','duplicates','unexpected','native_missing','native_duplicates','native_unexpected'])
     if not coverage['pass']:raise ValueError('Structure reconstruction lost or duplicated native lines.')
-    return {'version':'1.0.2','model':model['id'] if model else None,'raw_sha256':page['raw_sha256'],'blocks':blocks,'line_roles':decisions,'relations':relations,'region_relations':region_relations,'coverage':coverage,'issues':issues,'review_status':'unreviewed; native-line coverage is not OCR, semantic, reading-order or visual proof'}
+    return {'version':'1.0.3','model':model['id'] if model else None,'raw_sha256':page['raw_sha256'],'blocks':blocks,'line_roles':decisions,'relations':relations,'region_relations':region_relations,'coverage':coverage,'issues':issues,'review_status':'unreviewed; native-line coverage is not OCR, semantic, reading-order or visual proof'}

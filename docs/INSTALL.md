@@ -18,7 +18,7 @@ python3 skills/document-translation/scripts/translate.py doctor
 
 Use `.venv\Scripts\Activate.ps1` to activate the environment in Windows PowerShell. The client must use this environment, or another Python environment with the same dependencies, when it runs skill scripts.
 
-For PDF output, install Chromium as shown above or supply an existing browser with `--browser` when building/rendering. `TRANSLATION_BROWSER` can also hold its executable path. OCR needs a separate Tesseract installation and language packs, or macOS Vision with Swift available. See [format support](SUPPORT.md).
+For PDF output, install Chromium as shown above or supply an existing browser with `--browser` when building/rendering. `TRANSLATION_BROWSER` can also hold its executable path. PDF routes do not use OCR. Legacy recognition helpers for separately selected non-PDF rasters need Tesseract or macOS Vision. See [format support](SUPPORT.md).
 
 ## 2. Choose an installation location
 
@@ -68,3 +68,7 @@ The files in `claude-plugin/` mirror those manifests for browsing. The repositor
 Repository tests cover installation paths, backups and metadata. They do not establish interactive compatibility with every client version. See [reproducible checks](REPRODUCIBILITY.md).
 
 Client references: [Codex](https://developers.openai.com/codex/skills), [Claude Code](https://code.claude.com/docs/en/skills), [OpenCode](https://opencode.ai/docs/skills/), [Clouds_Coder](https://github.com/FonaTech/Clouds-Coder).
+
+## Windows encoding
+
+The CLI configures UTF-8 streams and inherited Python processes. Internal JSON, HTML and resource I/O uses explicit UTF-8, independent of a GBK/CP936 locale. Custom launchers should use `python -X utf8` and decode captured output as UTF-8. The system locale remains unchanged.

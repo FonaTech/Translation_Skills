@@ -108,6 +108,9 @@ def prepare(content, language, editions, include_all, split_text, title='', cont
                    'related_figures':[{'block_id':f.get('id'),'asset':f.get('asset'),'crop_text':f.get('crop_text'),'caption_block_ids':f.get('caption_block_ids',[]),'proposal':f.get('figure_region')} for f in active_blocks if f.get('crop_text') and (block.get('id') in f.get('caption_block_ids',[]) or f['source'].get('document_id')==did and f['source'].get('page')==block['source'].get('page') and block.get('structure',{}).get('semantic_role')=='label')]}
         items.append({'id': unit['id'], 'source': unit['source'], 'type': block['type'], 'locator': block['source'],
                       'context': context, 'source_checks': source_checks(unit['source']),
+                      'translation_source':unit.get('source_template',unit['source']),
+                      'protected_math':unit.get('protected_math',[]),
+                      'math_contract':'Translate surrounding prose. Copy each immutable math token exactly once, in source order. Never transcribe or expand formula artwork.',
                       'source_sentences': [{'index': i, 'source': s} for i, s in enumerate(split_text(unit['source']), 1)],
                       **{e: unit.get('translations', {}).get(language, {}).get(e, '') for e in editions}})
     return items

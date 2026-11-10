@@ -1,5 +1,9 @@
 # Agreements and conditions
 
-Track defined parties and terms consistently. Distinguish permission from obligation, and preserve exceptions, notice requirements and time windows. Clarifications must remain separate from the translated clause and must not change its effect.
+Decision to practice: Defined parties, may/must, exceptions and time windows.
 
-Use these checks on the selected source material and both complete editions.
+Inspect a representative passage from the actual selected material. Establish its full meaning before writing either target edition. Keep source text and translated artifacts outside the installed skill.
+
+Acceptance: Preserve the source’s complete conditions, values, qualifications, attributed actors and consequential order in both editions.
+
+Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.

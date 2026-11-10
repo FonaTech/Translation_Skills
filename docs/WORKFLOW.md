@@ -43,13 +43,9 @@ python3 skills/document-translation/scripts/translate.py ingest /path/to/another
 
 `--pages` applies to every PDF in that ingest call. Use separate calls for different selections. Detected tables still need cell-by-cell inspection, especially merged cells, signs and blank values.
 
-For scans, choose an available local OCR engine:
+PDF processing uses native text, font outlines, vectors and measured geometry. It rejects PDF OCR and host-agent page/table transcription, including raster-table fallbacks. Unavailable native text stays archived as source artwork with an incomplete-translation finding. An existing embedded text layer remains source evidence and needs comparison with visible content.
 
-```bash
-python3 skills/document-translation/scripts/translate.py ocr /path/to/translation-project --document D001 --pages 1-2 --engine tesseract --languages eng
-```
-
-On macOS, the alternative is `--engine vision --languages en-US`. Check recognized text against the visible page; record unreadable regions. The source-review exchange also accepts page/table transcription tied to inspected source evidence. Readable pages with damaged text maps may use the optional [font-map recovery tool](../skills/document-translation/references/font-map-recovery.md). See [extraction and OCR](../skills/document-translation/references/extraction-and-ocr.md) for crops, formulas and reading-order details.
+Readable pages with damaged text maps may use restricted [font-map recovery](../skills/document-translation/references/font-map-recovery.md). Non-PDF raster recognition helpers are separate. See [extraction methods](../skills/document-translation/references/extraction-and-ocr.md) for math, merged tables, source text layers and running furniture.
 
 ## 3. Translate the packets
 

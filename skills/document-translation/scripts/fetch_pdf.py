@@ -24,9 +24,9 @@ def fetch(url,output,rights='not-verified',allow_local=False,max_mb=50):
   current=url
   for _ in range(6):
    check_url(current,allow_local)
-   res=subprocess.run(['curl','--silent','--show-error','--proto','=http,https','--connect-timeout','20','--max-time','90','--max-filesize',str(int(max_mb*1024*1024)),'--dump-header',str(headers),'--output',str(temp),'--write-out','%{http_code}',current],text=True,capture_output=True)
+   res=subprocess.run(['curl','--silent','--show-error','--proto','=http,https','--connect-timeout','20','--max-time','90','--max-filesize',str(int(max_mb*1024*1024)),'--dump-header',str(headers),'--output',str(temp),'--write-out','%{http_code}',current],text=True,capture_output=True, encoding='utf-8')
    if res.returncode:raise ValueError('Download failed: '+res.stderr[:500])
-   status=int(res.stdout[-3:]);hs=headers.read_text(errors='replace');locations=[x.split(':',1)[1].strip() for x in hs.splitlines() if x.lower().startswith('location:')]
+   status=int(res.stdout[-3:]);hs=headers.read_text(errors='replace', encoding='utf-8');locations=[x.split(':',1)[1].strip() for x in hs.splitlines() if x.lower().startswith('location:')]
    if status in {301,302,303,307,308} and locations:
     from urllib.parse import urljoin
     current=urljoin(current,locations[-1]);continue
@@ -38,8 +38,10 @@ def fetch(url,output,rights='not-verified',allow_local=False,max_mb=50):
   if b'%PDF-' not in data[:1024]:raise ValueError('Response is not a PDF signature')
   import fitz
   d=fitz.open(temp);count=len(d);d.close();output.write_bytes(data)
- record={'requested_url':url,'final_url':current,'retrieved_at':datetime.now(timezone.utc).isoformat(),'filename':output.name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'pages':count,'rights':rights,'note':'Acquisition does not authorize redistribution or establish translation quality.'};output.with_suffix('.provenance.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n');return record
+ record={'requested_url':url,'final_url':current,'retrieved_at':datetime.now(timezone.utc).isoformat(),'filename':output.name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'pages':count,'rights':rights,'note':'Acquisition does not authorize redistribution or establish translation quality.'};output.with_suffix('.provenance.json').write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n', encoding='utf-8');return record
 if __name__=='__main__':
+ from runtime_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('url');p.add_argument('output');p.add_argument('--rights',default='not-verified');p.add_argument('--allow-local',action='store_true');p.add_argument('--max-mb',type=float,default=50);a=p.parse_args()
  try:print(json.dumps(fetch(a.url,a.output,a.rights,a.allow_local,a.max_mb),ensure_ascii=False,indent=2))
  except (ValueError,OSError) as e:print('ERROR: '+str(e),file=sys.stderr);sys.exit(2)

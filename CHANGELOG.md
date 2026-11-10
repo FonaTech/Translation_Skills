@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.3 — 2026-11-10
+
+- Added native table-cell linking, merged-cell topology validation and supported DOCX spans.
+- Improved source glyphs, restricted font-map recovery, hidden text-layer accounting and figure/raster ownership.
+- Archived repeated margin headers, footers and edge page numbers outside body translation.
+- Added explicit UTF-8 streams, file I/O and subprocess handling with Windows CP936 regressions.
+- Disabled PDF OCR and agent page/table transcription; unavailable native text stays source artwork with incomplete findings.
+- Raised the PyMuPDF minimum to 1.26.4 for native crop pruning.
+- Added a separate Chronos Document WebUI 1.1.4 download using the author's Project_Chronos model. The skill installation and runtime remain independent.
+
 ## 1.0.2 — 2026-11-09
 
 ### Translation workflow

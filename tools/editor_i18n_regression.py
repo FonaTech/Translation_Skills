@@ -13,7 +13,7 @@ def run(output,browser=None):
  def check(name,value,detail=None):report['checks'].append({'name':name,'pass':bool(value),'detail':detail})
  with sync_playwright() as pw:
   br=pw.chromium.launch(headless=True,**({'executable_path':browser} if browser else {}))
-  catalogs={p.stem:json.loads(p.read_text()) for p in (ROOT/'skills/document-translation/assets/editor/locales').glob('*.json')}
+  catalogs={p.stem:json.loads(p.read_text( encoding='utf-8')) for p in (ROOT/'skills/document-translation/assets/editor/locales').glob('*.json')}
   import re
   check('sixteen complete catalogs and identical placeholders',len(catalogs)==16 and all(set(d)==set(catalogs['en']) and all(re.findall(r'\{[a-zA-Z]+\}',v)==re.findall(r'\{[a-zA-Z]+\}',catalogs['en'][k]) for k,v in d.items()) for d in catalogs.values()))
   for source,expected in [('en-US','en'),('zh-CN','zh-Hans'),('zh-SG','zh-Hans'),('zh-TW','zh-Hant'),('zh-HK','zh-Hant'),('ja-JP','ja'),('es-MX','es'),('ar-SA','ar'),('de-DE','de'),('fr-FR','fr'),('pt-BR','pt'),('it-IT','it'),('ru-RU','ru'),('ko-KR','ko'),('hi-IN','hi'),('id-ID','id'),('vi-VN','vi'),('tr-TR','tr'),('xx-ZZ','en')]:
@@ -42,8 +42,8 @@ def run(output,browser=None):
   for kind in ['html','docx','txt']:
    with pg.expect_download() as item:pg.evaluate('(kind)=>Studio.exportFile(kind)',kind)
    item.value.save_as(out/('locale-export.'+kind))
-  exported=(out/'locale-export.html').read_text();check('HTML exports actual source language', '<html lang="zh-Hans" dir="ltr">' in exported)
-  text=(out/'locale-export.txt').read_text();check('TXT after preview retains all source text',all(x in text for x in ['界面语言不可改变正文','−12.5','هذه فقرة عربية أصلية.','0.85 V']))
+  exported=(out/'locale-export.html').read_text( encoding='utf-8');check('HTML exports actual source language', '<html lang="zh-Hans" dir="ltr">' in exported)
+  text=(out/'locale-export.txt').read_text( encoding='utf-8');check('TXT after preview retains all source text',all(x in text for x in ['界面语言不可改变正文','−12.5','هذه فقرة عربية أصلية.','0.85 V']))
   with zipfile.ZipFile(out/'locale-export.docx') as z:
    check('DOCX export CRC',z.testzip() is None);d=ET.fromstring(z.read('word/document.xml'));styles=ET.fromstring(z.read('word/styles.xml'));ns='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}';langs=[e.get(ns+'val') for e in d.iter(ns+'lang')];check('DOCX language tags retain multilingual source', 'zh-Hans' in langs and 'ar' in langs,langs)
    check('DOCX source numbers and Arabic text retained',all(x in ''.join(e.text or '' for e in d.iter(ns+'t')) for x in ['−12.5','هذه فقرة عربية أصلية.','0.85 V']))
@@ -70,6 +70,8 @@ def run(output,browser=None):
    ('bad saved locale',"localStorage.setItem('document-studio-ui-language-v101','../../bad')",'zh-Hans')]:
    cx=br.new_context(locale='zh-CN');p=cx.new_page();p.add_init_script(setup);p.goto(EDITOR.as_uri());p.wait_for_function('window.studioReady');check(label+' remains functional',p.evaluate('I18n.locale')==expected and p.evaluate('Studio.preview().then(r=>r.pass)'));cx.close()
   br.close()
- report['pass']=all(c['pass'] for c in report['checks']);(out/'editor-i18n-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'pass':report['pass'],'checks':len(report['checks']),'failed':[c['name'] for c in report['checks'] if not c['pass']]},ensure_ascii=False));return report
+ report['pass']=all(c['pass'] for c in report['checks']);(out/'editor-i18n-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', encoding='utf-8');print(json.dumps({'pass':report['pass'],'checks':len(report['checks']),'failed':[c['name'] for c in report['checks'] if not c['pass']]},ensure_ascii=False));return report
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--browser');a=p.parse_args();raise SystemExit(0 if run(a.output,a.browser)['pass'] else 1)

@@ -53,7 +53,7 @@ def run(projects, output, browser=None):
     if output.is_relative_to(ROOT):
         raise ValueError('Keep private projects and regression evidence outside the public skill.')
     output.mkdir(parents=True)
-    result = {'version': '1.0.2', 'checks': [], 'cases': [], 'pass': False,
+    result = {'version': '1.0.3', 'checks': [], 'cases': [], 'pass': False,
               'semantic_review': 'not implied: the invoking agent must inspect both complete translations',
               'scope': 'Actual full HTML editions, direct disk import, measured optimization, manual controls, HTML/PDF/DOCX round trips'}
 
@@ -101,7 +101,7 @@ def run(projects, output, browser=None):
                     expected = reader.evaluate('()=>[...document.querySelectorAll(".reader > .layout-document")].map(el=>JSON.parse(el.getAttribute("data-studio-layout")))')
                     painted = reader.evaluate('()=>(' + PAINTED_PAGES + ')(document)')
                     reader.close()
-                    page.evaluate('(html)=>Studio.importHTML(html,"Full document regression")', source.read_text())
+                    page.evaluate('(html)=>Studio.importHTML(html,"Full document regression")', source.read_text( encoding='utf-8'))
                     state = page.evaluate('JSON.parse(JSON.stringify(Studio.state))')
                     check(case, 'disk import preserves design, legends and running text', len(state['sections']) == len(expected) and all(
                         s['design'] == e['design'] and s.get('sourceDesign') == e.get('sourceDesign',e['design']) and
@@ -205,7 +205,7 @@ def run(projects, output, browser=None):
                         check(case, 'standalone printed PDF matches editor pages pixel for pixel', same and not differences,
                               {'pages': len(reopened_pdf), 'different_pages': differences})
                     exported.close()
-                    page.evaluate('(html)=>Studio.importHTML(html,"Exported HTML")', (folder / 'edited.html').read_text())
+                    page.evaluate('(html)=>Studio.importHTML(html,"Exported HTML")', (folder / 'edited.html').read_text( encoding='utf-8'))
                     restored = page.evaluate('Studio.state.sections')
                     check(case, 'HTML round trip preserves all content and image bytes', fingerprint(page) == original)
                     check(case, 'HTML round trip preserves editable parameters and legends', all(
@@ -236,6 +236,8 @@ def run(projects, output, browser=None):
 
 
 if __name__ == '__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--project', action='append', required=True)
     parser.add_argument('--output', required=True)

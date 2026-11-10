@@ -12,6 +12,72 @@ FIGURE_REFERENCE = re.compile(r'^\s*(?:fig(?:ure)?s?\.?)\s*[A-Z]?\d+(?:\.\d+)*[a
 FIGURE_START = re.compile(r'^\s*(?:(?:supplementary\s+)?(?:fig(?:ure)?s?\.?|f\s*i\s*g\s*u\s*r\s*e)\s*[A-Z]?\d+|[图圖図]\s*[A-Z]?\d+|(?:abbildung|abb\.|figura|рис\.)\s*\d+)', re.I)
 
 
+def caption_anchors(captions):
+    """Share artwork across coincident caption anchors without merging text.
+
+    Existing visible and hidden source layers may disagree. Such wording must
+    remain separate evidence, but the same physical figure number cannot split
+    a plate into competing owners. Distinct numbers or positions stay separate.
+    Every member must match every other member; no transitive geometry chain.
+    """
+    import fitz
+    groups = []
+    def same_anchor(a, b):
+        aa, bb = fitz.Rect(a['source']['bbox']), fitz.Rect(b['source']['bbox'])
+        def number(block):
+            match = FIGURE_START.match(' '.join(u['source'] for u in block['units']))
+            return re.sub(r'\s+', '', match.group()).casefold() if match else None
+        overlap = max(0, min(aa.x1, bb.x1)-max(aa.x0, bb.x0))
+        return (number(a) == number(b) and abs(aa.y0-bb.y0) <= 2 and
+                overlap/max(.01, min(aa.width, bb.width)) >= .95 and
+                .8 <= aa.width/max(.01, bb.width) <= 1.25)
+    for cap in captions:
+        candidates = [group for group in groups if all(same_anchor(cap, peer) for peer in group)]
+        if len(candidates) == 1:
+            candidates[0].append(cap)
+        else:
+            groups.append([cap])
+    return groups
+
+
+def standalone_formula(block):
+    """Keep an explicitly decoded display outside automatic figure labels."""
+    return (block.get('type') == 'equation' and
+            (block.get('formula_detection', {}).get('kind') == 'display' or
+             block.get('structure', {}).get('representation') == 'source-spatial-region'))
+
+
+def nearest_artwork_group(box, groups):
+    """Assign text against immutable artwork, never an expanding label envelope.
+
+    A rectangle overlapping several plates is ambiguous. Distances use the
+    actual components rather than the empty area of their union. A tie retains
+    the native text for review instead of choosing an arbitrary caption.
+    """
+    import fitz
+    box = fitz.Rect(box)
+    scores = []
+    for index, components in enumerate(groups):
+        distances = []
+        overlap = 0
+        for component in components:
+            component = fitz.Rect(component)
+            overlap = max(overlap, (box & component).get_area()/max(.01, box.get_area()))
+            dx = max(0, box.x0-component.x1, component.x0-box.x1)
+            dy = max(0, box.y0-component.y1, component.y0-box.y1)
+            distances.append(math.hypot(dx, dy))
+        if distances:
+            scores.append((overlap, min(distances), index))
+    if not scores:
+        return None
+    overlaps = [row for row in scores if row[0] > .05]
+    if overlaps:
+        overlaps.sort(key=lambda row: -row[0])
+        return overlaps[0][2] if len(overlaps) == 1 or overlaps[0][0]-overlaps[1][0] > .1 else None
+    scores.sort(key=lambda row: row[1])
+    return scores[0][2] if len(scores) == 1 or scores[1][1]-scores[0][1] > 1 else None
+
+
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -46,7 +112,7 @@ def archive_unbound(root, content):
     if not excluded:
         return []
     path = root/'reports'/'figure-regions'/'excluded-automatic-images.json'
-    archive = read(path) if path.exists() else {'schema_version': '1.0.2', 'blocks': []}
+    archive = read(path) if path.exists() else {'schema_version': '1.0.3', 'blocks': []}
     known = {b['id'] for b in archive['blocks']}
     archive['blocks'].extend(b for b in excluded if b['id'] not in known)
     archive.update(policy='caption-required-for-automatic-images',
@@ -72,8 +138,8 @@ def confirmed_table_boxes(raw):
 def archive_crop(page, bbox, stem, root):
     """Archive visible native characters, font/position and nearby caption context.
 
-    Empty/outlined/scanned text remains explicitly unknown; the image and source
-    preview are the vision/OCR evidence. Text is never guessed from an outline.
+    Empty/outlined/scanned text remains explicitly unknown. Keep the original
+    artwork; PDF crops never trigger OCR or guessed outline transcription.
     """
     import fitz
     root, stem, box = Path(root), Path(stem), fitz.Rect(bbox)
@@ -104,11 +170,12 @@ def archive_crop(page, bbox, stem, root):
                 if horizontal > 0 and gap < 100:
                     nearby.append({'native_line_id': lid, 'bbox': list(bb), 'text': full,
                                    'purpose': 'context only; not part of crop text'})
-    evidence = {'schema_version': '1.0.2', 'page': page.number+1, 'bbox': list(box),
+    evidence = {'schema_version': '1.0.3', 'page': page.number+1, 'bbox': list(box),
                 'coordinate_space': 'PDF page points; native text coordinates', 'page_rotation': page.rotation,
                 'lines': lines, 'plain_text': '\n'.join(x['text'] for x in lines),
-                'nearby_context': nearby, 'native_text_status': 'available' if lines else 'none; inspect image or run OCR',
-                'ocr_required_if_visible_text_missing': True, 'review_status': 'unreviewed',
+                'nearby_context': nearby, 'native_text_status': 'available' if lines else 'unavailable; source artwork retained',
+                'pdf_ocr_allowed': False, 'ocr_required_if_visible_text_missing': False,
+                'review_status': 'unreviewed',
                 'contract': 'Native text can be incomplete or garbled. Keep the crop with this ledger. Caption candidates must be verified against the page; never generate absent wording.'}
     stem.parent.mkdir(parents=True, exist_ok=True)
     jp, tp = stem.with_suffix('.text.json'), stem.with_suffix('.text.txt')
@@ -122,13 +189,14 @@ def archive_crop(page, bbox, stem, root):
 
 def export_region(page, box, stem, root, mode='auto', native_text_exclusions=None, raster_xrefs=None):
     import fitz
-    from vector_assets import export_crop
+    from vector_assets import export_crop, check_raster_completeness
     box, root, stem = fitz.Rect(box) & page.rect, Path(root), Path(stem)
     if box.is_empty or box.is_infinite or not all(math.isfinite(x) for x in box):
         raise ValueError('Invalid visible crop bounds.')
+    completeness = check_raster_completeness(page, box, raster_xrefs)
     vectors = any(fitz.Rect(d['rect']).intersects(box) for d in page.get_drawings())
     extra, path = {}, None
-    if mode == 'svg' or mode == 'auto' and vectors and not page.rotation:
+    if mode == 'svg' or mode == 'auto' and not page.rotation:
         try:
             exported = export_crop(page, box, stem, scale=3,native_text_exclusions=native_text_exclusions,raster_xrefs=raster_xrefs)
             path = exported['vector']
@@ -141,9 +209,11 @@ def export_region(page, box, stem, root, mode='auto', native_text_exclusions=Non
         path = stem.with_suffix('.png'); path.parent.mkdir(parents=True, exist_ok=True)
         from vector_assets import source_crop_page
         with source_crop_page(page,native_text_exclusions,raster_xrefs) as reviewed:
-            reviewed.get_pixmap(matrix=fitz.Matrix(3, 3), clip=box, colorspace=fitz.csRGB, alpha=False).save(path)
+            scale=min(8,4096/max(box.width,box.height))
+            reviewed.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=box, colorspace=fitz.csRGB, alpha=False).save(path)
         extra.setdefault('vector', {'representation': 'source-rendered-png', 'visual_review': 'pending'})
     extra.update(asset=path.relative_to(root).as_posix(), asset_sha256=digest(path),
+                 raster_completeness=completeness,
                  crop_text=archive_crop(page, box, stem, root))
     return extra
 
@@ -194,6 +264,9 @@ def propose(page, blocks, table_boxes=()):
                  b.get('presentation', {}).get('role') == 'caption' or
                  FIGURE_START.match(' '.join(u['source'] for u in b['units']))) and
                 FIGURE_START.match(' '.join(u['source'] for u in b['units'])) and not FIGURE_REFERENCE.match(' '.join(u['source'] for u in b['units']))]
+    anchors = caption_anchors(captions)
+    caption_ids = {group[0]['id']: [cap['id'] for cap in group] for group in anchors}
+    captions = [group[0] for group in anchors]
     raster_evidence=visible_rasters(page)
     raw = [(list(x['bbox']), 'raster-footprint') for x in raster_evidence['regions']]
     raw += [(x['bbox'], 'vector-cluster') for x in inventory(page)['regions']]
@@ -253,7 +326,10 @@ def propose(page, blocks, table_boxes=()):
     graphics = []
     for bounds, kind in raw:
         bb = fitz.Rect(bounds) & page.rect
-        if bb.is_empty or bb.width < 24 or bb.height < 18 or kind=='vector-cluster' and bb.get_area() > page.rect.get_area()*.90:
+        # Small raster strips can encode a complete figure. Consolidate their
+        # measured shared edges before applying the standalone artwork size gate.
+        raster_tile = 'raster' in kind
+        if bb.is_empty or (not raster_tile and (bb.width < 24 or bb.height < 18)) or kind=='vector-cluster' and bb.get_area() > page.rect.get_area()*.90:
             continue
         if any(t.contains(bb) or (t & bb).get_area()/max(1,bb.get_area())>.92 for t in tables):
             continue
@@ -279,10 +355,15 @@ def propose(page, blocks, table_boxes=()):
                         max(0,min(rect(c).x1,box.x1)-max(rect(c).x0,box.x0))/max(1,min(rect(c).width,box.width))>.4]
                     return min(candidates,key=lambda c:abs(rect(c).y0-box.y1)+abs(rect(c).x0-box.x0)*.2)['id'] if candidates else None
                 oa,ob=owner(aa),owner(bb)
-                if not oa or not ob or oa!=ob:continue
+                raster_pair = 'raster' in a['kind'] and 'raster' in b['kind']
+                shared_edge = ((abs(aa.x0-bb.x0)<.3 and abs(aa.x1-bb.x1)<.3 and ygap<.15) or
+                               (abs(aa.y0-bb.y0)<.3 and abs(aa.y1-bb.y1)<.3 and xgap<.15))
+                tiled = raster_pair and shared_edge and (aa & bb).get_area() < min(aa.get_area(),bb.get_area())*.02
+                if (oa and ob and oa!=ob) or (not tiled and (not oa or not ob)):continue
                 if (aa&bb).get_area()>min(aa.get_area(),bb.get_area())*.02 and oa!=ob:continue
                 a['box']=aa|bb;a['raster_xrefs']=sorted(set(a['raster_xrefs']+b['raster_xrefs']));a['kind']='+'.join(sorted(set(a['kind'].split('+')+b['kind'].split('+'))));graphics.pop(j);changed=True;break
             if changed:break
+    graphics=[g for g in graphics if g['box'].width>=24 and g['box'].height>=18]
     # A caption can wrap into the opposite column at the same baseline. This
     # source cue authorizes a full-width panel band without a document-specific
     # filename rule. Separate numbered captions at the same height stay separate.
@@ -362,7 +443,7 @@ def propose(page, blocks, table_boxes=()):
                 gap=max(0,envelope.y0-bb.y1,bb.y0-envelope.y1)
                 vertical_overlap=max(0,min(bb.y1,envelope.y1)-max(bb.y0,envelope.y0))/max(1,min(bb.height,envelope.height))
                 horizontal_gap=max(0,bb.x0-envelope.x1,envelope.x0-bb.x1)
-                column_connected=overlap>=.65 and gap<=min(45,page.rect.height*.055)
+                column_connected=overlap>=.65 and gap<=min(72,page.rect.height*.095)
                 caption_horizon=horizons[group['caption']['id']]
                 cross_column_tail=caption_horizon[1]-caption_horizon[0]>page.rect.width*.9
                 max_row_gap=page.rect.width*.2 if cross_column_tail else min(60,page.rect.width*.11)
@@ -388,7 +469,12 @@ def propose(page, blocks, table_boxes=()):
             key='after' if g['box'].y0>=rect(cap).y1 else 'before'
             sides.setdefault(key,[]).append(g)
         part_groups.extend({'caption':cap,'graphics':gs} for gs in sides.values())
-    for group in part_groups + [{'caption':None,'graphics':[g]} for g in unused]:
+    all_groups=part_groups + [{'caption':None,'graphics':[g]} for g in unused]
+    component_groups=[[list(g['box']) for g in group['graphics']] for group in all_groups]
+    formula_boxes=[rect(b) for b in blocks if standalone_formula(b) and b.get('source',{}).get('bbox')]
+    label_owners={b['id']:nearest_artwork_group(b['source']['bbox'],component_groups)
+                  for b in blocks if b.get('source',{}).get('bbox')}
+    for group_index,group in enumerate(all_groups):
         cap, gs = group['caption'], group['graphics'];bb=fitz.Rect(gs[0]['box'])
         for g in gs[1:]: bb |= g['box']
         outlined=[]
@@ -409,34 +495,66 @@ def propose(page, blocks, table_boxes=()):
         # Include native figure labels within a local margin. Never absorb prose
         # solely because it is near artwork; source units remain in the IR.
         included=[]
-        for b in blocks:
-            if b is cap or not b['source'].get('bbox'):
-                continue
-            br=rect(b); semantic=b.get('structure',{}).get('semantic_role')
-            text=' '.join(u['source'] for u in b.get('units',[])).strip()
-            section_heading=bool(re.match(r'^(?:[IVXLCDM]+\.|\d+(?:\.\d+)*\.?)\s+[A-Z]',text) and sum(c.isalpha() for c in text)>12 and (text.upper()==text or b.get('typography',{}).get('bold')))
-            if section_heading:continue
-            panel_marker=bool(re.fullmatch(r'\(?[a-z]\)?',' '.join(u['source'] for u in b.get('units',[])).strip()))
-            short_table_label=semantic=='table' and b['type']!='table' and sum(len(u['source']) for u in b.get('units',[]))<85 and not FIGURE_START.match(' '.join(u['source'] for u in b.get('units',[])))
-            if any(t.contains(br) for t in tables):continue
-            if (semantic=='label' or panel_marker or short_table_label) and (bb+(-12,-12,12,12)).intersects(br):
-                if cap and br.y1>rect(cap).y0+1:continue
-                bb |= br;included.append(b['id'])
+        # Native serialization order may put rotated axis titles before tick
+        # labels. Revisit the bounded margin until the plate envelope stabilizes.
+        # Captions, section headings, real tables and prose are hard barriers.
+        for _ in range(4):
+            changed=False
+            for b in blocks:
+                if b is cap or b['id'] in included or not b['source'].get('bbox'):
+                    continue
+                br=rect(b); semantic=b.get('structure',{}).get('semantic_role')
+                text=' '.join(u['source'] for u in b.get('units',[])).strip()
+                section_heading=bool(re.match(r'^(?:[IVXLCDM]+\.|\d+(?:\.\d+)*\.?)\s+[A-Z]',text) and sum(c.isalpha() for c in text)>12 and (text.upper()==text or b.get('typography',{}).get('bold')))
+                if (section_heading or b.get('presentation',{}).get('role')=='caption' or
+                        standalone_formula(b) or label_owners.get(b['id'])!=group_index):continue
+                # A broken or duplicate text layer inside a decoded formula is
+                # formula evidence, not permission to expand the nearby figure.
+                if any((br & box).get_area()/max(.01,br.get_area())>.8 for box in formula_boxes):continue
+                panel_marker=bool(re.fullmatch(r'\(?[a-z]\)?',text))
+                tick=semantic=='metadata' and bool(re.fullmatch(r'[+−-]?\d+(?:\.\d+)?',text))
+                short_table_label=semantic=='table' and b['type']!='table' and len(text)<85 and not FIGURE_START.match(text)
+                if any(t.contains(br) for t in tables):continue
+                if (semantic=='label' or panel_marker or short_table_label or tick) and (bb+(-12,-12,12,12)).intersects(br):
+                    if cap and br.y1>rect(cap).y0+1:continue
+                    bb |= br;included.append(b['id']);changed=True
+            if not changed:break
         padding=0 if all('raster' in g['kind'] for g in gs) and not included and not outlined else 2
         bb = (bb+(-padding,-padding,padding,padding)) & page.rect
         # Preserve the complete owned plate even where its transparent image
         # footprint overlaps another plate. Isolate PDF image identities instead
         # of clipping at a neighbor's rectangle, which can amputate real panels.
         owned=sorted({x for g in gs for x in g.get('raster_xrefs',[])})
-        raster_xrefs=owned if owned and all('raster' in g['kind'] for g in gs) else None
+        # A small internal bitmap (for example, an apparatus part) need not be
+        # large enough to seed a standalone figure. Retain it when the complete
+        # visible footprint has this unambiguous, source-bound plate owner.
+        ownership_notes=[]
+        if owned and all('raster' in g['kind'] for g in gs):
+            enclosed=[item for item in raster_evidence['regions'] if item.get('xref') and
+                (fitz.Rect(item['bbox'])&bb).get_area()/max(.01,fitz.Rect(item['bbox']).get_area())>=.98]
+            # Expand ownership before exporting, not after a failed integrity
+            # check. A tiny enclosed bitmap can be too small to seed a group.
+            owned=sorted(set(owned)|{item['xref'] for item in enclosed
+                if nearest_artwork_group(item['bbox'],component_groups) in {None,group_index}})
+            conflicts=[item['xref'] for item in enclosed if item['xref'] not in owned]
+            # Overlapping source plates can have contradictory component
+            # ownership. Preserve all visible source artwork in that rectangle;
+            # never construct an incomplete filtered crop or weaken its guard.
+            if conflicts:ownership_notes.append({'code':'overlapping-raster-ownership',
+                'xrefs':sorted(conflicts),'action':'unfiltered-source-artwork-retained'})
+        raster_xrefs=owned if owned and all('raster' in g['kind'] for g in gs) and not ownership_notes else None
         exclusions=[]
         for other in blocks:
             if not other.get('source',{}).get('bbox') or other.get('presentation',{}).get('role')!='caption':continue
             if bb.intersects(rect(other)):
                 exclusions.append({'bbox':list(rect(other)&page.rect),'reason':'Adjoining native caption is translated separately; artwork preserved.', 'evidence':'source block '+other['id']+'; native caption role and overlap with PDF crop'})
         if bb.width<24 or bb.height<18:continue
-        proposals.append({'bbox':list(bb),'caption_block_ids':[cap['id']] if cap else [],
+        proposals.append({'bbox':list(bb),'caption_block_ids':caption_ids[cap['id']] if cap else [],
+                          'caption_anchor_method':'coincident-source-number-and-geometry; conflicting wording retained',
+                          'source_component_bboxes':component_groups[group_index],
+                          'label_ownership_method':'nearest-immutable-artwork-components; ambiguous text retained',
                           'raster_xrefs':raster_xrefs,
+                          'raster_ownership_notes':ownership_notes,
                           'native_text_exclusions':exclusions,
                           'evidence_kinds':sorted({g['kind'] for g in gs}),
                           'association_routes':sorted({g.get('association_route','learned-caption-association' if cap else 'unbound-source-artwork') for g in gs}),
@@ -485,7 +603,8 @@ def append_page(root, content, did, page, add_block, table_boxes=()):
     # source-label archive. A retained-label exception is reviewed explicitly.
     # Ordinary prose/captions and partially intersecting blocks remain untouched.
     owners={}
-    for record in records:
+    component_groups=[r.get('source_component_bboxes',[r['bbox']]) for r in records]
+    for record_index,record in enumerate(records):
         if not record.get('block_id'):continue
         image=next(b for b in content['blocks'] if b['id']==record['block_id'])
         candidates=set(record.get('contained_label_block_ids',[]))
@@ -494,10 +613,12 @@ def append_page(root, content, did, page, add_block, table_boxes=()):
              sum(len(u['source']) for u in b.get('units',[]))<=85))
         for bid in candidates:
             candidate=next((b for b in blocks if b['id']==bid),None)
-            if candidate is None or candidate.get('presentation',{}).get('role')=='caption':continue
+            if (candidate is None or candidate.get('presentation',{}).get('role')=='caption' or
+                    standalone_formula(candidate)):continue
             if (candidate.get('structure',{}).get('semantic_role') not in {'label','table','equation'} and
                 sum(len(u['source']) for u in candidate.get('units',[]))>85):continue
             if candidate['type']=='table' or not candidate.get('source',{}).get('bbox'):continue
+            if nearest_artwork_group(candidate['source']['bbox'],component_groups)!=record_index:continue
             if not __import__('fitz').Rect(record['bbox']).contains(__import__('fitz').Rect(candidate['source']['bbox'])):continue
             owners.setdefault(bid,[]).append(image)
     moved=[]
@@ -511,8 +632,8 @@ def append_page(root, content, did, page, add_block, table_boxes=()):
                 issue.update(block_id=image['id'],original_block_id=bid,source_label_owner=image['id'])
     folder=root/'reports'/'figure-regions';folder.mkdir(parents=True,exist_ok=True)
     ledger=folder/f'{did}-p{page.number+1:04d}.json'
-    write(ledger,{'schema_version':'1.0.2','document_id':did,'page':page.number+1,'proposals':records,
+    write(ledger,{'schema_version':'1.0.3','document_id':did,'page':page.number+1,'proposals':records,
                  'admission_policy':'caption-required-for-automatic-images',
                  'native_units_removed':False,'native_label_blocks_rehomed':moved,'review_status':'unreviewed',
-                 'limits':'Not all arbitrary figures can be detected. Inspect disconnected panels, captions and outlined labels. Scans need visual/OCR region detection.'})
+                 'limits':'Not all arbitrary figures can be detected. Inspect disconnected panels, captions and outlined labels. Unavailable PDF text remains source artwork; OCR is disabled.'})
     return records

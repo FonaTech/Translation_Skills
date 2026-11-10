@@ -68,4 +68,7 @@ def main():
     args=parser.parse_args();print(json.dumps(export(args.annotations,args.model,args.output)))
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

@@ -7,7 +7,7 @@ ASSETS = Path(__file__).resolve().parent.parent / 'assets'
 
 
 def toolbar(title, edition, full=True):
-    labels = json.loads((ASSETS / 'reader-locales.json').read_text())['en']
+    labels = json.loads((ASSETS / 'reader-locales.json').read_text( encoding='utf-8'))['en']
     esc = lambda x: html.escape(str(x), quote=True)
     label = edition if edition in {'faithful', 'interpretive', 'alignment'} else 'faithful'
     actions = ''
@@ -21,8 +21,8 @@ def toolbar(title, edition, full=True):
 
 
 def runtime():
-    data = json.dumps(json.loads((ASSETS / 'reader-locales.json').read_text()), ensure_ascii=False).replace('<', '\u003c')
-    return 'const TRANSLATION_READER_LOCALES=' + data + ';' + chr(10) + (ASSETS / 'reader-i18n.js').read_text()
+    data = json.dumps(json.loads((ASSETS / 'reader-locales.json').read_text( encoding='utf-8')), ensure_ascii=False).replace('<', '\u003c')
+    return 'const TRANSLATION_READER_LOCALES=' + data + ';' + chr(10) + (ASSETS / 'reader-i18n.js').read_text( encoding='utf-8')
 
 
 def styles():

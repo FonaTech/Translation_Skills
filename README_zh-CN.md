@@ -4,7 +4,7 @@
 
 [English](README.md) · [安装说明](docs/INSTALL.md) · [操作流程](docs/WORKFLOW.md) · [支持格式](docs/SUPPORT.md)
 
-Yufeng Zhan · MIT · v1.0.2
+Yufeng Zhan · MIT · v1.0.3
 
 Translation Skills 可用于 Codex、Claude Code、OpenCode 和 Clouds_Coder。你可以翻译一份文件，也可以按指定顺序合编多份手册、报告、文章、故事或其他材料。文件范围、目标语言和阅读对象由你决定。
 
@@ -22,7 +22,7 @@ Translation Skills 可用于 Codex、Claude Code、OpenCode 和 Clouds_Coder。�
 
 ## 开始使用
 
-需要 Python 3.10 或更新版本。PDF 输出和图形核对使用本地 Chromium 浏览器。扫描件可选用 Tesseract、macOS Vision，或由模型对照原页识读并提交复核记录。
+需要 Python 3.10 或更新版本。PDF 输出和图形核对使用本地 Chromium 浏览器。PDF 提取需要 PyMuPDF 1.26.4 或更新版本。没有可恢复原生文字的 PDF 扫描页保留未完成状态；非 PDF 图片的可选识别工具单独使用。
 
 ```bash
 git clone https://github.com/FonaTech/Translation_Skills.git
@@ -48,15 +48,21 @@ python3 tools/install.py --targets codex --project /path/to/project --apply
 
 > 使用 document-translation，把 /path/to/manual.pdf 翻译成日语，供初次使用者阅读。生成忠实全译版、理解性译写版和原文对照册，提供 HTML 和 PDF。保留警告、表格和图内标注，并列出无法辨认的内容。
 
-## 1.0.2 更新
+## 1.0.3 更新
 
-- 新增可恢复的流程控制器，记录源文复核、翻译、渲染和交付进度。各脚本阶段之间的语义判断和页面检查由客户端模型完成。
-- PDF 提取默认使用离线模型，提出文字角色、段落连接和阅读区域建议，同时保留坐标、字形和字体证据；也可选择原生提取。
-- 图形裁剪保留邻近文字、图注候选和原文坐标。复核后的源文修改会刷新排版所用的布局映射。
-- 可选字体映射恢复工具为受支持的缺失 Unicode 映射生成独立修复副本，并比较修复前后的页面外观。
-- 改进分页与编辑器，处理栏高、图文关联及导出文件中的图片。
+- 新增原生表格单元连接模型及独立合并单元格检查，受支持的行列合并可保留到 HTML 分页和 DOCX 导出。
+- 改进数学字形、图形归属和字体映射恢复，同时保留原始证据及未解决问题。
+- 将重复页眉、页脚和边缘页码从正文翻译中分离，原文记录仍可追溯。
+- 文件、控制台和子进程明确使用 UTF-8，并增加 Windows CP936 编码回归。
+- PDF 仅使用原生文字、字体轮廓、矢量和页面几何，不再调用 OCR 或页面／表格识字补入；无法恢复的文字保留源图并标记未完成。
 
 详细内容见[变更记录](CHANGELOG.md)和[操作流程](docs/WORKFLOW.md)。
+
+## 独立程序版
+
+同一个 [1.0.3 Release](https://github.com/FonaTech/Translation_Skills/releases/tag/v1.0.3) 另附 **Chronos Document WebUI 1.1.4** 实验程序，使用作者的 [Project_Chronos](https://github.com/FonaTech/Project_Chronos) 翻译模型，在本机提供英文 PDF 到中文的翻译界面。
+
+技能版调用 agent 客户端当前的模型，生成两个完整译文版本；独立程序使用自己的本地模型，生成中文阅读版和中英对照。两者分别下载、安装和运行，详见[程序版下载与启动说明](docs/WEBUI.md)。
 
 ## 排版与编辑
 
@@ -73,7 +79,8 @@ python3 tools/install.py --targets codex --project /path/to/project --apply
 ```bash
 python3 -m pip install -r requirements-optional.txt
 python3 tools/validate.py
-python3 -m unittest discover -s tests -v
+python3 -m pip install pytest
+python3 -m pytest tests -q
 python3 tools/checksums.py
 ```
 

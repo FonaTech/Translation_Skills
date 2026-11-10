@@ -24,6 +24,27 @@ def validate_groups(unit,item,splitter):
 def rows(unit,language):
  groups=unit.get('alignment',{}).get(language)
  if not groups:return [unit]
- return [{'id':g['id'],'source':g['source'],'source_sentence_ids':g['source_sentence_ids'],
-          'translations':{language:{ed:g[ed] for ed in ['faithful','interpretive']}},
-          'notes':unit.get('notes',[]),'source_segments':unit.get('source_segments',[]),'parent_unit_id':unit['id']} for g in groups]
+ # Offsets follow the complete source once, rather than matching an identical
+ # formula literal again in every group. Grouping may normalize whitespace.
+ source=compact(unit['source']);joined=compact(''.join(g['source'] for g in groups))
+ if source!=joined:raise ValueError('Alignment group source coverage differs from parent unit')
+ out=[];cursor=0
+ for g in groups:
+  text=g['source'];positions=[i for i,c in enumerate(text) if not c.isspace()];end=cursor+len(positions);records=[]
+  for rec in unit.get('protected_math',[]):
+   a=len(compact(unit['source'][:rec['start']]));b=len(compact(unit['source'][:rec['end']]))
+   if a<end and cursor<b:
+    if not cursor<=a<b<=end:raise ValueError('Formula crosses alignment group boundary')
+    local={**rec,'start':positions[a-cursor],'end':positions[b-cursor-1]+1};records.append(local)
+  pieces=[];previous=0
+  for rec in records:
+   pieces.extend([text[previous:rec['start']],rec['token']]);previous=rec['end']
+  pieces.append(text[previous:]);template=''.join(pieces)
+  row={'id':g['id'],'source':text,'source_sentence_ids':g['source_sentence_ids'],
+       'translations':{language:{ed:g[ed] for ed in ['faithful','interpretive']}},
+       'notes':unit.get('notes',[]),'source_segments':unit.get('source_segments',[]),'parent_unit_id':unit['id'],
+       'protected_math':records,'source_template':template}
+  from math_protection import validate
+  for target in row['translations'][language].values():validate(row,target)
+  out.append(row);cursor=end
+ return out

@@ -1,5 +1,9 @@
-# Narrative voice
+# Narrative and literary voice
 
-Follow the narrator, imagery, dialogue and temporal relationships. Preserve uncertainty where the source leaves it open. Rewriting for readability should not introduce motives, gestures, explanations or events absent from the passage.
+Decision to practice: Imagery, temporal tension, speech and ambiguity.
 
-Use these checks on the selected source material and both complete editions.
+Inspect a representative passage from the actual selected material. Establish its full meaning before writing either target edition. Keep source text and translated artifacts outside the installed skill.
+
+Acceptance: Preserve the source’s complete conditions, values, qualifications, attributed actors and consequential order in both editions.
+
+Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.

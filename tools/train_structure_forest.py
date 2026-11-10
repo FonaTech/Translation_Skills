@@ -75,7 +75,7 @@ def main():
     # Verify exported numerical traversal before trusting an end-to-end result.
     checks=x[::max(1,len(x)//60)]
     np.testing.assert_allclose(s.predict_many(head,checks.tolist()),classifier.predict_proba(checks),atol=2e-10,rtol=0)
-    report={'version':'1.0.2','split_audit':split_audit,'parity_checked':len(checks),
+    report={'version':'1.0.3','split_audit':split_audit,'parity_checked':len(checks),
         'training_examples':len(samples),'validation_role':trainer.evaluate(head,val,.8),
         'heldout_role':trainer.evaluate(head,held,.8),'not_semantic_accuracy':True}
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(model,separators=(',',':'),allow_nan=False)+'\n',encoding='utf-8')
@@ -84,4 +84,7 @@ def main():
         'accepted_validation':report['validation_role']['accepted_accuracy'],'nodes':sum(len(t['left']) for t in trees)}))
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

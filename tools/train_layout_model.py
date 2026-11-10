@@ -77,16 +77,16 @@ def collect(path,count,browser,seed,resume=False):
     from playwright.sync_api import sync_playwright
     rng=random.Random(seed);records=[]
     if resume and path.exists():
-        saved=json.loads(path.read_text())
+        saved=json.loads(path.read_text( encoding='utf-8'))
         if saved.get('seed')!=seed or saved.get('features')!=FEATURES:
             raise ValueError('Resume requires the same seed and feature contract.')
         records=saved['documents']
         if len(records)>count:raise ValueError('Resume would truncate an existing dataset.')
     def checkpoint():
-        dataset={'version':'1.0.2','seed':seed,'features':FEATURES,'provenance':'Original synthetic fixtures rendered with shared DOM pagination. Engineering preferences, not human aesthetic judgments. No private source documents.','documents':records}
+        dataset={'version':'1.0.3','seed':seed,'features':FEATURES,'provenance':'Original synthetic fixtures rendered with shared DOM pagination. Engineering preferences, not human aesthetic judgments. No private source documents.','documents':records}
         path.parent.mkdir(parents=True,exist_ok=True)
         temporary=path.with_suffix('.checkpoint.tmp')
-        temporary.write_text(json.dumps(dataset,ensure_ascii=False,indent=2))
+        temporary.write_text(json.dumps(dataset,ensure_ascii=False,indent=2), encoding='utf-8')
         temporary.replace(path)
         return dataset
     with sync_playwright() as pw:
@@ -212,7 +212,7 @@ def _train(dataset,epochs,np):
         correct+=local_correct;total+=local_total
         evaluation.append({'document':docs[i]['document'],'selected':chosen['candidate'],'teacher_best':best['candidate'],'regret':round(utility(best['features'])-utility(chosen['features']),6),'pairwise_correct':local_correct,'pairwise_total':local_total,'family':'alignment' if docs[i]['fixture'].get('alignmentLabels') else 'long' if i>=64 else 'standard'})
     def rounded(a):return np.round(a,9).tolist()
-    model={'id':'dom-ranker-1.0.1','version':'1.0.2','architecture':[len(FEATURES),hidden,1],'activation':'tanh','features':FEATURES,'mean':rounded(mean),'scale':rounded(scale),'feature_min':rounded(matrix.min(axis=0)),'feature_max':rounded(matrix.max(axis=0)),'weights':rounded(W),'bias':rounded(bias),'output':rounded(v),'seed':seed,'training_documents':len(docs)-len(holdout),'holdout_documents':len(holdout),'training_pairs':len(pairs),'epochs':epochs,'label_source':'Disclosed engineering utility of real DOM measurements; synthetic training only. Not a semantic or calibrated aesthetic model.'}
+    model={'id':'dom-ranker-1.0.1','version':'1.0.3','architecture':[len(FEATURES),hidden,1],'activation':'tanh','features':FEATURES,'mean':rounded(mean),'scale':rounded(scale),'feature_min':rounded(matrix.min(axis=0)),'feature_max':rounded(matrix.max(axis=0)),'weights':rounded(W),'bias':rounded(bias),'output':rounded(v),'seed':seed,'training_documents':len(docs)-len(holdout),'holdout_documents':len(holdout),'training_pairs':len(pairs),'epochs':epochs,'label_source':'Disclosed engineering utility of real DOM measurements; synthetic training only. Not a semantic or calibrated aesthetic model.'}
     report={'model':model['id'],'document_split':True,'training_documents':len(docs)-len(holdout),'holdout_documents':len(holdout),'training_pairs':len(pairs),'holdout_pairwise_accuracy':correct/max(1,total),'holdout_mean_regret':sum(e['regret'] for e in evaluation)/len(evaluation),'holdout':evaluation,'fixture_families':{k:len(v) for k,v in groups.items()},'training_page_count_range':[min(c.get('report',{}).get('pages',1) for _,c in training),max(c.get('report',{}).get('pages',1) for _,c in training)],'limits':model['label_source']}
     report['numerics']={'contraction':'numpy.einsum, optimize=False','floating_errors':'raise','features_gradients_parameters':'finite-checked','calibrated_aesthetic_confidence':False}
     return model,report
@@ -223,8 +223,8 @@ def export(model,dataset_path,report):
     folder=ASSETS/'models';folder.mkdir(exist_ok=True)
     model_json=json.dumps(model,ensure_ascii=False,indent=2,allow_nan=False)
     report_json=json.dumps(report,ensure_ascii=False,indent=2,allow_nan=False)
-    (folder/'dom-ranker.json').write_text(model_json)
-    (folder/'evaluation.json').write_text(report_json)
+    (folder/'dom-ranker.json').write_text(model_json, encoding='utf-8')
+    (folder/'evaluation.json').write_text(report_json, encoding='utf-8')
     js='/* Original offline MLP weights and inference. MIT, Yufeng Zhan. */\nconst LayoutModel=(()=>{const model='+json.dumps(model,separators=(',',':'))+';\n'
     js+='''function predict(features){
  if(!Array.isArray(features)||features.length!==model.features.length||features.some(x=>!Number.isFinite(x)))return {model:model.id,score:null,reason:'invalid-features',confidence:null};
@@ -235,10 +235,12 @@ def export(model,dataset_path,report):
  const score=hidden.reduce((s,v,j)=>s+v*model.output[j],0);return {model:model.id,score,confidence:null};
 }return {predict,info:{id:model.id,architecture:model.architecture,training_documents:model.training_documents,holdout_documents:model.holdout_documents,label_source:model.label_source,dataset_sha256:model.dataset_sha256}};})();
 '''
-    (ASSETS/'layout-model.js').write_text(js)
+    (ASSETS/'layout-model.js').write_text(js, encoding='utf-8')
 
 
 if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--dataset',type=Path,required=True);ap.add_argument('--documents',type=int,default=40);ap.add_argument('--seed',type=int,default=173);ap.add_argument('--epochs',type=int,default=1800);ap.add_argument('--collect',action='store_true');ap.add_argument('--resume',action='store_true',help='Resume collection after verifying every saved fixture; never remeasure completed documents');ap.add_argument('--browser',default=os.environ.get('TRANSLATION_BROWSER'));a=ap.parse_args()
-    dataset=collect(a.dataset,a.documents,a.browser,a.seed,a.resume) if a.collect else json.loads(a.dataset.read_text())
+    dataset=collect(a.dataset,a.documents,a.browser,a.seed,a.resume) if a.collect else json.loads(a.dataset.read_text( encoding='utf-8'))
     model,report=train(dataset,a.epochs);export(model,a.dataset,report);print(json.dumps(report,ensure_ascii=False,indent=2))

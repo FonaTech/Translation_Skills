@@ -52,6 +52,9 @@ def split_text(s):
   key=marker+str(len(protected))+marker;protected[key]=match.group();return key
  pattern=r'(?<![A-Za-z])(?:[A-Z]\.|(?:Fig|Figs|Eq|Eqs|Vol|Nos|NO|No|Dr|Mr|Mrs|Ms|Prof|Dept|Inc|Ltd|St|vs|al|min|max)\.|e\.g\.|i\.e\.)'
  masked=re.sub(r'^(?:Fig(?:ure)?\.?|Table)\s*\d+\.',hold,s,flags=re.I)
+ # A mathematical factorial followed by a clause is not an exclamation.
+ # Preserve the original substring; this is boundary detection, not completion.
+ masked=re.sub(r'(?<=[A-Za-z0-9)\]₀-₉])!(?=[,;:]|\s+[a-z])',hold,masked)
  masked=re.sub(pattern,hold,masked)
  masked=re.sub(r'^(?:[IVX]+|[A-Z])\.(?=\s)',hold,masked)
  masked=re.sub(r'^(?:Fig(?:ure)?\.?|Table)\s*\d+\.',hold,masked,flags=re.I)
@@ -69,6 +72,9 @@ def add_block(c,docid,typ,source,texts=None,**kw):
  src=next(x for x in c['sources'] if x['id']==docid);n=src.get('next_block_index',1);src['next_block_index']=n+1;bid=f'{docid}-B{n:05d}'
  b={'id':bid,'type':typ,'source':{'document_id':docid,**source},'units':[],**kw}
  for i,t in enumerate(texts or [],1):b['units'].append({'id':f'{bid}-U{i:04d}','source':t,'translations':{},'notes':[]})
+ if typ not in {'image','equation','reference'} and kw.get('format')!='code' and kw.get('presentation',{}).get('role')!='bibliography':
+  from math_protection import attach
+  for unit in b['units']:attach(unit)
  c['blocks'].append(b);return b
 
 def doctor(args):
@@ -164,6 +170,8 @@ def ingest(a):
    d=fitz.open(p)
    if d.needs_pass and not (a.password and d.authenticate(a.password)):raise ValueError('PDF password required; original preserved.')
    selected=page_selection(a.pages,len(d));src['page_count']=len(d);src['selection_scope']={'pages':[x+1 for x in selected]}
+   src['extraction_policy']={'pdf_ocr':False,'route':'native-text-font-vector-geometry',
+                             'unavailable_text':'retain-source-and-flag'}
    vector_pages=[];prepared=None
    if structure_mode=='ml':
     from structure_ingest import prepare
@@ -203,20 +211,27 @@ def ingest(a):
      numbered=split_numbered_entries(text)
      add_block(c,did,typ,{'page':pn+1,'bbox':list(b['bbox'])},numbered or split_text(text),level=2)
      if numbered:warnings.append({'page':pn+1,'code':'numbered-entry-review','message':'Consecutive line-start bracketed entries kept intact; verify list/bibliography role and cross-block continuations against the page.'})
-     if re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]',text):
+     if re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]',text):
       warnings.append({'page':pn+1,'code':'text-encoding-review','message':'Control/replacement glyphs in native text. Compare formulas/symbols with the page and record a checked source correction.'})
     c['blocks'].extend(tbs)
     from figure_regions import append_page as append_figures
     from figure_regions import confirmed_table_boxes
     figure_tables=confirmed_table_boxes(prepared['pages'][pn+1]) if prepared else [list(x) for x in regions]
-    from region_ocr import recover_tables
-    recovered_tables,ocr_records=recover_tables(r,c,did,page,add_block)
+    from region_ocr import retain_pdf_tables
+    recovered_tables,artwork_records=retain_pdf_tables(r,c,did,page,add_block)
     figure_tables+=recovered_tables
     figure_proposals=append_figures(r,c,did,page,add_block,figure_tables)
     if figure_proposals:
      warnings.append({'page':pn+1,'code':'figure-region-review','message':'Automatic source-bound figure crops and caption candidates saved in reports/figure-regions; native text/font/positions retained in crop_text. Inspect edges, caption ownership and duplicate label units before translation.'})
     if len(page.get_text().strip())<40:
-     warnings.append({'page':pn+1,'code':'ocr-required','message':'Low native text; resolve OCR before complete translation.'})
+     warnings.append({'page':pn+1,'code':'native-text-unavailable','message':'Insufficient native PDF text; source page retained. PDF OCR is disabled; complete translation is not established.'})
+     if not any(b.get('source_page_fallback') and b['source'].get('document_id')==did and b['source'].get('page')==pn+1 for b in c['blocks']):
+      from figure_regions import export_region
+      extra=export_region(page,page.rect,r/'assets'/f'{did}-p{pn+1:04d}-source-page',r)
+      add_block(c,did,'image',{'page':pn+1,'bbox':list(page.rect)},[],**extra,
+                source_page_fallback=True,width_mm=round(page.rect.width*25.4/72,2),
+                label_policy='retained-original',label_note='Original PDF page retained; native text unavailable.',
+                structure={'semantic_role':'source-page','representation':'source-page-artwork','review_required':True})
     from vector_assets import inventory
     vector_page=inventory(page);vector_pages.append(vector_page)
     if vector_page['regions'] or vector_page['vector_paths']>12:warnings.append({'page':pn+1,'code':'vector-review','message':'Inspect provisional regions in reports/vector-inventory.json against the full page; select complete figure bounds, then crop. Detected regions are not verified figures.'})
@@ -320,6 +335,8 @@ def apply(a):
   if not valid_notes(u.get('notes',[])):raise ValueError('Invalid existing notes for '+uid+'; use objects with a nonempty note and optional language.')
   if 'note' in item and (not isinstance(item['note'],str) or not item['note'].strip()):raise ValueError('note requires a nonempty string: '+uid)
   if any(not isinstance(item.get(e),str) or (u['source'].strip() and not item[e].strip()) for e in m['editions']):raise ValueError('Missing/empty requested edition: '+uid)
+  from math_protection import validate as validate_math
+  for edition in m['editions']:validate_math(u,item[edition])
   from alignment import validate_groups
   groups=validate_groups(u,item,split_text)
   replacement=item.get('replace_notes')
@@ -366,14 +383,18 @@ def audit_data(r,m,c):
     if not isinstance(t.get(e),str) or (u['source'].strip() and not t[e].strip()):errors.append({'code':'missing-translation','id':u['id'],'language':lang,'edition':e})
     elif u['source'].strip()==t[e].strip() and re.search(r'[A-Za-z]{3}\s+[A-Za-z]{3}',u['source']) and len(u['source'])>40 and not u.get('retain_source_reason'):
      warnings.append({'code':'unchanged-prose-review','id':u['id'],'language':lang,'edition':e,'message':'Identical narrative text needs actual translation or a justified retain_source_reason (same-language/protected passage).'})
-    if isinstance(t.get(e),str) and sorted(number_tokens(u['source']))!=sorted(number_tokens(t[e])):warnings.append({'code':'number-tokens','id':u['id'],'language':lang,'edition':e,'source':number_tokens(u['source']),'target':number_tokens(t[e])})
+    if isinstance(t.get(e),str) and sorted(number_tokens(u['source']))!=sorted(number_tokens(__import__('math_protection').literal(t[e],u.get('protected_math',[])))):warnings.append({'code':'number-tokens','id':u['id'],'language':lang,'edition':e,'source':number_tokens(u['source']),'target':number_tokens(t[e])})
  from refinement import validate_blocks
  errors.extend(validate_blocks(c))
+ from math_protection import audit as math_audit
+ errors.extend(math_audit(r,c))
  for b in c['blocks']:
   if b['source']['document_id'] not in sources:errors.append({'code':'unknown-source','block':b['id']})
   if b['type']=='table':
-   rowids=[u for row in b.get('rows',[]) for u in row]
+   rowids=[u for row in b.get('rows',[]) for u in row if u is not None]
    if sorted(rowids)!=sorted(u['id'] for u in b['units']):errors.append({'code':'table-cell-map','block':b['id']})
+   from table_topology import errors as table_errors
+   errors.extend(table_errors(b))
   if b.get('asset'):
    try:
     p=safe(r,b['asset'])
@@ -420,23 +441,20 @@ def crop(a):
 
 def ocr(a):
  r,m,c=project(a.project);source=next(s for s in c['sources'] if s['id']==a.document);file=safe(r,source['file']);pages=[]
- if file.suffix=='.pdf':
-  import fitz
-  d=fitz.open(file)
-  for pn in page_selection(a.pages,len(d)) if a.pages else [x-1 for x in source.get('selection_scope',{}).get('pages',range(1,len(d)+1))] if isinstance(source.get('selection_scope'),dict) else range(len(d)):
-   path=r/'previews'/f'{a.document}-ocr-p{pn+1:04d}.png';d[pn].get_pixmap(matrix=fitz.Matrix(2,2)).save(path);pages.append((pn+1,path))
- else:pages=[(1,file)]
+ if file.suffix.lower()=='.pdf':
+  raise ValueError('PDF OCR is disabled. Use native text, embedded font outlines and source geometry; retain pages with unavailable text.')
+ pages=[(1,file)]
  results=[]
  for pn,path in pages:
   existing=[b for b in c['blocks'] if b['source'].get('document_id')==a.document and b['source'].get('page')==pn and b.get('units')]
   if existing and not a.allow_native:raise ValueError(f'Native text exists on page {pn}; use explicit --allow-native only after deduplication plan.')
   if a.engine=='vision':
-   cmd=['swift',str(HERE/'vision_ocr.swift'),str(path),a.languages];res=subprocess.run(cmd,text=True,capture_output=True)
+   cmd=['swift',str(HERE/'vision_ocr.swift'),str(path),a.languages];res=subprocess.run(cmd,text=True,capture_output=True, encoding='utf-8')
    if res.returncode:raise ValueError('Local Vision OCR failed on page '+str(pn)+': '+res.stderr[-1200:]+'. Continue source-reviewed transcribe-page in the invoking agent loop; do not invent text.')
    data=json.loads(res.stdout)
   else:
    if not shutil.which('tesseract'):raise ValueError('Tesseract unavailable; install locally or use an authorized OCR fallback.')
-   res=subprocess.run(['tesseract',str(path),'stdout','-l',a.languages,'tsv'],text=True,capture_output=True,check=True)
+   res=subprocess.run(['tesseract',str(path),'stdout','-l',a.languages,'tsv'],text=True,capture_output=True,check=True, encoding='utf-8')
    rows=list(csv.DictReader(io.StringIO(res.stdout),delimiter='\t'));group={}
    for row in rows:
     if row.get('text','').strip():group.setdefault((row['block_num'],row['par_num'],row['line_num']),[]).append(row)
@@ -444,9 +462,6 @@ def ocr(a):
   for item in data:add_block(c,a.document,'paragraph',{'page':pn,'ocr_engine':a.engine,'bbox':item.get('bbox')},split_text(item['text']),ocr_confidence=item.get('confidence'),ocr_bbox_units=item.get('bbox_units','engine-specific; verify before geometry use'))
   results.append({'page':pn,'lines':len(data)})
  c['issues'].append({'document_id':a.document,'code':'ocr-review','status':'open','message':'Compare every OCR unit against visible source; resolve duplicated regions and source page image labels.'})
- if file.suffix.lower()=='.pdf':
-  from structure_layout import write_map
-  write_map(r,c,source)
  write(r/'content.json',c);write(r/'reports/ocr.json',results);print(json.dumps(results))
 
 def review(a):
@@ -463,7 +478,7 @@ def review(a):
 def release(a):
  r,m,c=project(a.project);au=audit_data(r,m,c);errors=list(au['errors']);
  from asset_fidelity import release_errors,rendered_release_errors
- errors.extend(release_errors(r,m,c));errors.extend(rendered_release_errors(r,m,c));reviews=read(r/'reports/reviews.json') if (r/'reports/reviews.json').exists() else [];snapshot=snap(m,c)
+ errors.extend(release_errors(r,m,c));errors.extend(rendered_release_errors(r,m,c));errors.extend(__import__('math_protection').release_errors(r,m,c));reviews=read(r/'reports/reviews.json') if (r/'reports/reviews.json').exists() else [];snapshot=snap(m,c)
  for kind in ['extraction','semantic','visual']:
   fresh=[x for x in reviews if x['kind']==kind and x['snapshot']==snapshot and x['scope']=='all']
   if not fresh:errors.append({'code':'review-missing-or-stale','kind':kind});continue
@@ -548,4 +563,7 @@ def main():
  try:
   a=parser().parse_args();return a.fn(a) or 0
  except (ValueError,KeyError,FileNotFoundError,ImportError,subprocess.CalledProcessError) as e:print('ERROR: '+str(e),file=sys.stderr);return 2
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    from runtime_encoding import configure_utf8
+    configure_utf8()
+    sys.exit(main())

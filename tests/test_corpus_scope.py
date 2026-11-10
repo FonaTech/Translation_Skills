@@ -14,7 +14,7 @@ class CorpusScopeTests(unittest.TestCase):
  def prepare(self,root,scope):
   src=self.make_pdf(root);out=root/'run'
   with contextlib.redirect_stdout(io.StringIO()):corpus.prepare(argparse.Namespace(pdf_root=str(src),output_root=str(out),count=1,seed=173,language='zh-Hans',scope=scope))
-  return out,json.loads((out/'selection.json').read_text())
+  return out,json.loads((out/'selection.json').read_text( encoding='utf-8'))
  def test_full_scope_ingests_every_source_page_without_translations(self):
   with tempfile.TemporaryDirectory() as name:
    out,m=self.prepare(Path(name),'full');self.assertEqual(m['samples'][0]['selected_pages'],[1,2,3,4,5]);self.assertFalse(m['semantic_translation_complete'])
@@ -26,7 +26,7 @@ class CorpusScopeTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as name:
    out,m=self.prepare(Path(name),'first-middle');m['scope']='full';t.write(out/'selection.json',m)
    with contextlib.redirect_stdout(io.StringIO()):code=corpus.check(argparse.Namespace(output_root=str(out)))
-   report=json.loads((out/'regression-report.json').read_text());self.assertEqual(code,1);codes={e['code'] for e in report['samples'][0]['errors']};self.assertIn('full-document-scope-incomplete',codes);self.assertIn('real-packet-coverage-missing',codes);self.assertFalse(report['pass'])
+   report=json.loads((out/'regression-report.json').read_text( encoding='utf-8'));self.assertEqual(code,1);codes={e['code'] for e in report['samples'][0]['errors']};self.assertIn('full-document-scope-incomplete',codes);self.assertIn('real-packet-coverage-missing',codes);self.assertFalse(report['pass'])
  def test_pdf_image_size_is_source_relative(self):
   import fitz
   with tempfile.TemporaryDirectory() as name:

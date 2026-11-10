@@ -38,8 +38,8 @@ class AutomaticWorkflowTests(unittest.TestCase):
 
     def project(self,root):
         with contextlib.redirect_stdout(io.StringIO()):t.init(argparse.Namespace(project=str(root),title='Fixture',languages='zh-Hans',style='editorial',page_size='A4',columns=1))
-        r,m,c=t.project(root);(r/'sources/source.txt').write_text('Visible text.');c['sources']=[{'id':'D001','file':'sources/source.txt','name':'source.txt','sha256':t.sha(r/'sources/source.txt')}]
-        b=t.add_block(c,'D001','paragraph',{'element':'p1'},['Visible text.']);c['issues']=[{'code':'fixture-review','status':'open'}];t.write(r/'content.json',c);(r/'previews/source.txt').write_text('Original fixture evidence');return r,m,c,b
+        r,m,c=t.project(root);(r/'sources/source.txt').write_text('Visible text.', encoding='utf-8');c['sources']=[{'id':'D001','file':'sources/source.txt','name':'source.txt','sha256':t.sha(r/'sources/source.txt')}]
+        b=t.add_block(c,'D001','paragraph',{'element':'p1'},['Visible text.']);c['issues']=[{'code':'fixture-review','status':'open'}];t.write(r/'content.json',c);(r/'previews/source.txt').write_text('Original fixture evidence', encoding='utf-8');return r,m,c,b
 
     def test_source_review_is_atomic_and_rejects_stale_packets(self):
         with tempfile.TemporaryDirectory() as d:
@@ -88,7 +88,7 @@ class AutomaticWorkflowTests(unittest.TestCase):
             packet['source_hash']=t.source_snap(m,c);t.write(p,packet)
             with self.assertRaises(ValueError):source_review.apply(r,p)
 
-    def test_host_agent_scan_transcription_is_source_bound_and_not_duplicated(self):
+    def test_pdf_scan_transcription_is_rejected_without_changing_source(self):
         import fitz
         with tempfile.TemporaryDirectory() as d:
             r,m,c,b=self.project(Path(d)/'project');pdf=r/'sources/scan.pdf'
@@ -97,10 +97,9 @@ class AutomaticWorkflowTests(unittest.TestCase):
             c['sources'][0].update(file='sources/scan.pdf',name='scan.pdf',sha256=t.sha(pdf),page_count=1);c['blocks']=[];t.write(r/'content.json',c)
             (r/'previews/D001-p0001.png').write_bytes(b'owned inspected preview fixture')
             op={'op':'transcribe-page','document_id':'D001','page':1,'evidence_file':'previews/D001-p0001.png','regions':[{'text':'Only visible source text.','bbox':[10,20,180,55],'type':'heading','level':1}],'observation':'Read the visible heading directly from the source-page preview.'}
-            packet={'source_hash':t.source_snap(m,c),'reviewer':'test agent','evidence':['previews/D001-p0001.png'],'operations':[op]};p=r/'tasks/scan.json';t.write(p,packet);source_review.apply(r,p)
-            _,m,c=t.project(r);self.assertEqual([u['source'] for _,u in t.units(c)],['Only visible source text.'])
-            packet['source_hash']=t.source_snap(m,c);t.write(p,packet)
-            with self.assertRaisesRegex(ValueError,'duplicate'):source_review.apply(r,p)
+            packet={'source_hash':t.source_snap(m,c),'reviewer':'test agent','evidence':['previews/D001-p0001.png'],'operations':[op]};p=r/'tasks/scan.json';t.write(p,packet)
+            with self.assertRaisesRegex(ValueError,'PDF OCR/transcription is disabled'):source_review.apply(r,p)
+            self.assertEqual(t.read(r/'content.json'),c)
 
     def test_heading_alignment_keeps_next_and_preserves_separate_notes(self):
         import publishing
@@ -114,10 +113,10 @@ class AutomaticWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             r,m,c,b=self.project(Path(d)/'project');inventory={}
             for ed in m['editions']+['alignment']:
-                f=f'zh-Hans-{ed}.html';(r/'outputs'/f).write_text(ed);inventory[f]=t.sha(r/'outputs'/f)
+                f=f'zh-Hans-{ed}.html';(r/'outputs'/f).write_text(ed, encoding='utf-8');inventory[f]=t.sha(r/'outputs'/f)
             t.write(r/'reports/build.json',{'snapshot':t.snap(m,c),'pipeline_fingerprint':publishing.pipeline_fingerprint(),'artifacts':inventory})
             self.assertTrue(publishing.artifacts_current(r,m,c,'build'))
-            (r/'outputs/zh-Hans-faithful.html').write_text('Changed output')
+            (r/'outputs/zh-Hans-faithful.html').write_text('Changed output', encoding='utf-8')
             self.assertFalse(publishing.artifacts_current(r,m,c,'build'))
             self.assertFalse(workflow.valid_review(r,m,c,'visual',{'kind':'visual','snapshot':t.snap(m,c),'scope':'all','evidence':{}}))
 

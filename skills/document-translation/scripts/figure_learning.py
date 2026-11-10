@@ -26,7 +26,7 @@ def load_model():
  if not MODEL_PATH.is_file():return None
  stat=MODEL_PATH.stat();signature=(str(MODEL_PATH.resolve()),stat.st_mtime_ns,stat.st_size)
  if _cache is None or signature!=_cache_signature:
-  data=json.loads(MODEL_PATH.read_text());
+  data=json.loads(MODEL_PATH.read_text( encoding='utf-8'));
   if data.get('caption_features')!=CAPTION_FEATURES or data.get('link_features')!=LINK_FEATURES:raise ValueError('Figure model feature contract mismatch')
   _validate_head(data.get('caption_head',{}),len(CAPTION_FEATURES));_validate_head(data.get('link_head',{}),len(LINK_FEATURES))
   if any(not isinstance(data.get(k),(int,float)) or not math.isfinite(data[k]) or not 0<data[k]<1 for k in ['caption_threshold','link_threshold']):raise ValueError('Invalid figure model threshold')
@@ -37,7 +37,10 @@ def font_family(line):
  name=re.sub(r'^[A-Z]{6}\+','',line.get('font','')).lower()
  return re.sub(r'(?:bold|italic|oblique|regular|roman|psmt|mt|ps|[-_ ,])','',name)
 def baseline(line):
- from source_structure import text_baseline
+ if __package__:
+     from .source_structure import text_baseline
+ else:
+     from source_structure import text_baseline
  return text_baseline(line) if line.get('spans') else line['bbox'][3]
 def section_boundary(text):
  return bool(re.match(r'^\s*(?:(?:acknowledg(?:e)?ments?|references|bibliography|literature cited|conclusions?|abstract|keywords|致谢|致謝|参考文献|參考文獻|参考文献)\s*(?::|：|$)|\[\d+\]\s*[A-Z])',text,re.I))
@@ -112,7 +115,10 @@ def link_features(box,caption,page,blocks=(),kind='vector-cluster'):
  text=caption.get('text','');gap=c[1]-b[3];up=b[1]-c[3]
  return [max(-1,min(1,gap/h)),max(-1,min(1,up/h)),over,abs((b[0]+b[2]-c[0]-c[2])/2)/w,math.log(bw/cw),max(0,b[3]-b[1])/h,bw/w,b[1]/h,b[3]/h,c[1]/h,c[3]/h,cw/w,float(gap>=-8),float(up>=-8),min(4,blockers)/4,float(b[3]<h*.08),float(c[1]<h*.10),min(abs(gap),abs(up))/h,float('raster' in kind),float('vector' in kind),max(0,c[0]-b[2],b[0]-c[2])/w,float(b[0]<=c[0] and b[1]<=c[1] and b[2]>=c[2] and b[3]>=c[3]),float(bool(PREFIX.match(text))),float(bool(re.match(r'^\s*(?:table|表)',text,re.I)))]
 def predict(head,rows):
- from source_structure import predict_many
+ if __package__:
+     from .source_structure import predict_many
+ else:
+     from source_structure import predict_many
  return [p[1] for p in predict_many(head,rows)]
 def caption_scores(page,profile,model=None):
  model=model or load_model()

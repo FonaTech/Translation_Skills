@@ -1,5 +1,9 @@
 # Technical documents and code
 
-Keep code identifiers, commands, parameter names and literal values traceable to the source. Preserve the meaning of zero, blank, null and N/A where they differ. Translate explanations while checking negation, prerequisites and version conditions.
+Decision to practice: Identifiers, numeric values and negation.
 
-Use these checks on the selected source material and both complete editions.
+Inspect a representative passage from the actual selected material. Establish its full meaning before writing either target edition. Keep source text and translated artifacts outside the installed skill.
+
+Acceptance: Preserve the source’s complete conditions, values, qualifications, attributed actors and consequential order in both editions.
+
+Common review: no omitted condition, invented context or changed attribution; numerical differences require explanation. Keep stable IDs and source locators. The same pipeline applies; this case adds review attention, not a specialized parser or mandatory style. Compare both target editions with the source, not merely with each other.

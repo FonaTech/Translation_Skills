@@ -9,8 +9,8 @@ from translate import project,read,write,source_snap,safe,sha,now,units
 
 def prepare(root):
     r,m,c=project(root)
-    packet={'schema_version':'1.0.2','source_hash':source_snap(m,c),'reviewer':'','evidence':[],
-        'contract':'Inspect selected source previews, native rows, crop ledgers and OCR images. Return only checked operations, never author completions. No local LLM service is required. Do not edit rendered files or write per-document repair code.',
+    packet={'schema_version':'1.0.3','source_hash':source_snap(m,c),'reviewer':'','evidence':[],
+        'contract':'Inspect selected source previews, native rows and crop ledgers. PDF processing uses native text/font/vector geometry only: no OCR or page/table transcription fallback. Return checked operations without author completions. Do not edit rendered files or write per-document repair code.',
         'operations':[],'issues':c.get('issues',[]),'blocks':[]}
     for b in c['blocks']:
         packet['blocks'].append({'id':b['id'],'type':b['type'],'source':b['source'],'typography':b.get('typography'),
@@ -19,6 +19,7 @@ def prepare(root):
             'units':[{'id':u['id'],'source':u['source'],'ocr_evidence':u.get('ocr_evidence')} for u in b.get('units',[])]})
     packet['source_previews']=[p.relative_to(r).as_posix() for p in sorted((r/'previews').glob('*.png'))]
     packet['ocr_evidence']=[p.relative_to(r).as_posix() for p in sorted((r/'reports/region-ocr').glob('*.json'))]
+    packet['artwork_evidence']=[p.relative_to(r).as_posix() for p in sorted((r/'reports/region-artwork').glob('*.json'))]
     path=r/'tasks/source-review.json';write(path,packet);return path
 
 def apply(root,path):
@@ -66,6 +67,7 @@ def apply(root,path):
             if set(op)-{'op','document_id','page','evidence_file','regions','observation'}:raise ValueError('Unexpected page transcription fields.')
             did=op.get('document_id');pn=op.get('page');source=next((s for s in c['sources'] if s['id']==did),None)
             if source is None or type(pn) is not int or not 1<=pn<=int(source.get('page_count') or 1):raise ValueError('Unknown source page.')
+            if Path(source['file']).suffix.lower()=='.pdf':raise ValueError('PDF OCR/transcription is disabled; retain original pages with unavailable native text.')
             scope=source.get('selection_scope')
             if isinstance(scope,dict) and pn not in scope.get('pages',[]):raise ValueError('Page is outside selected scope.')
             existing=[b for b in c['blocks'] if b['source']['document_id']==did and b['source'].get('page')==pn]
@@ -114,6 +116,9 @@ def apply(root,path):
             if len({len(row) for row in rows})!=1 or type(header) is not int or not 0<=header<=len(rows):raise ValueError('Invalid source table grid.')
             cap=blocks.get(proposal.get('caption_block_id'))
             if cap is None:raise ValueError('Missing source table caption.')
+            source=next((s for s in c['sources'] if s['id']==cap['source']['document_id']),None)
+            if source is None:raise ValueError('Missing source table document.')
+            if Path(source['file']).suffix.lower()=='.pdf':raise ValueError('PDF OCR/transcription is disabled; retain original table artwork.')
             if cap['source'].get('page')!=proposal.get('source_page'):raise ValueError('Table proposal and caption must refer to the same source page.')
             from translate import add_block
             b=add_block(c,cap['source']['document_id'],'table',{'page':proposal['source_page'],'bbox':proposal['bbox'],'ocr_evidence':f},[],rows=[],header_rows=header,caption_block_ids=[cap['id']],structure={'semantic_role':'table','representation':'source-bound-host-agent-grid'})

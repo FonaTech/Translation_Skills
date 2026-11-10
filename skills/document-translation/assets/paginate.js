@@ -23,6 +23,6 @@ window.optimizeTranslationLayout=async function(){
   if(i===0)baselinePages=report.pages.length;candidates.push(LayoutAssist.evaluate(candidate,report,original,baselinePages));
  }
  const ranked=LayoutAssist.rank(candidates),best=ranked.find(c=>c.safe);window.layoutChosenSections=best?best.sections:original;
- const result=await paginate();window.layoutOptimization={model:typeof LayoutModel==='undefined'?null:LayoutModel.info,chosen:best?.id||null,ranking_mode:best?.model||null,candidates:ranked.map(c=>({id:c.id,score:c.score,safe:c.safe,pages:c.report.pages.length,features:c.features,model:c.model,model_fallback:c.model_fallback,learned_score:c.learned_score??null})),visual_review_required:true};return {layout:result,optimization:window.layoutOptimization};
+ const result=await paginate();window.layoutOptimization={model:typeof LayoutModel==='undefined'?null:LayoutModel.info,chosen:best?.id||null,ranking_mode:best?.model||null,candidates:ranked.map(c=>({id:c.id,score:c.score,safe:c.safe,pages:c.report.pages.length,features:c.features,model:c.model,model_fallback:c.model_fallback,learned_score:c.learned_score??null,pagination_guard:Boolean(c.pagination_guard)})),visual_review_required:true};return {layout:result,optimization:window.layoutOptimization};
 };
 window.addEventListener('load',()=>paginate().catch(e=>{window.translationError=String(e);window.translationLayout={pass:false,error:String(e)};console.error(e);}));

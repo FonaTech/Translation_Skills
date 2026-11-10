@@ -32,4 +32,6 @@ def run(root,browser=None,vision=False):
   results.append(rec)
  t.write(root/'results.json',results);print(json.dumps(results,ensure_ascii=False,indent=2));return 1 if any(x['status']=='failed' for x in results) else 0
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-root',required=True);p.add_argument('--browser');p.add_argument('--vision',action='store_true',help='Optional local macOS OCR attempt, still unreviewed');a=p.parse_args();sys.exit(run(a.output_root,a.browser,a.vision))

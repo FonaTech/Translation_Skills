@@ -57,7 +57,13 @@ const LayoutAssist=(()=>{
   // candidate needs fallback, score the entire comparison with the same rule.
   const fallback=candidates.some(c=>c.safe&&c.model==='deterministic-rule-fallback');
   const comparable=candidates.map(c=>fallback?{...c,learned_score:c.model==='deterministic-rule-fallback'?null:c.score,score:ruleScore(c.features),model:'deterministic-rule-fallback',model_fallback:c.model_fallback||'comparison-contains-outside-envelope-candidate'}:c);
-  return comparable.sort((a,b)=>Number(b.safe)-Number(a.safe)||(a.report?.readability?.severe||0)-(b.report?.readability?.severe||0)||b.score-a.score||a.changed-b.changed);
+  const safe=comparable.filter(c=>c.safe),severe=Math.min(...safe.map(c=>c.report?.readability?.severe||0));
+  const pageFloor=Math.min(...safe.filter(c=>(c.report?.readability?.severe||0)===severe&&c.report?.pages?.length).map(c=>c.report.pages.length));
+  // A numerical utility gain must not add a sparse tail when a candidate
+  // with the same readability severity safely fits fewer pages. Preserve
+  // raw learned scores; this is a disclosed pagination constraint.
+  for(const c of comparable){const pages=c.report?.pages||[];c.pagination_guard=pages.length>pageFloor&&pages.at(-1)?.vertical_fill<.55;}
+  return comparable.sort((a,b)=>Number(b.safe)-Number(a.safe)||(a.report?.readability?.severe||0)-(b.report?.readability?.severe||0)||Number(a.pagination_guard)-Number(b.pagination_guard)||b.score-a.score||a.changed-b.changed);
  }
  function ruleScore(x){return -50*x[0]-24*x[1]-16*x[2]-50*x[3]-3*Math.max(0,.4-x[5])-3*Math.max(0,x[5]-.95)-1.5*x[6]-.7*x[8]-5*x[9]-1.6*x[10]-1.2*x[11]-5*x[12]-2*x[13]-.9*Math.max(0,x[14])-.5*x[18]-.7*x[19]-.8*x[20]-.25*x[21]-.3*x[22]-2*x[23];}
  function evaluate(candidate,report,original,baselinePages){

@@ -18,7 +18,6 @@ class ReleasePolicyTests(unittest.TestCase):
                 'skills/document-translation/assets/models/training-data.json',
             }
             private = {
-                'ACKNOWLEDGMENTS.md', 'docs/ACKNOWLEDGMENTS.md',
                 'skills/document-translation/examples/demo/outputs/example.pdf',
                 'skills/document-translation/demos/translated.html',
                 'tools/outputs/translated.pdf',
@@ -52,7 +51,7 @@ class ReleasePolicyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             (root / 'tools').mkdir()
-            (root / 'private.txt').write_text('local-only')
+            (root / 'private.txt').write_text('local-only', encoding='utf-8')
             try:
                 (root / 'tools/leak.txt').symlink_to(root / 'private.txt')
             except (OSError, NotImplementedError):

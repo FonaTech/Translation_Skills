@@ -1,6 +1,6 @@
 # Resumable invoking-agent workflow
 
-Run `python3 scripts/translate.py workflow PROJECT --advance --browser BROWSER` after init/ingest. `reports/workflow.json` records the current source/content hashes, stage and next action. The controller runs deterministic stages; the model already running in the client performs semantic and visual decisions. The current client model performs intermediate semantic and visual tasks; no separate translation service is required. Continue within the user's authorized scope until `stage: released` and `complete: true`. A task JSON file is an exchange interface, not a completed translation.
+Run `python3 scripts/translate.py workflow PROJECT --advance --browser BROWSER` after init/ingest. `reports/workflow.json` records the current source/content hashes, stage and next action. The controller runs deterministic stages; the model already running in the client performs semantic and visual decisions. No Ollama, API key, auxiliary language model or human-operated intermediate step is required. Continue within the user's authorized scope until `stage: released` and `complete: true`. A task JSON file is an exchange interface, not a completed translation.
 
 ## Stage actions
 
@@ -26,8 +26,8 @@ No action silently certifies itself. Unreadable source, missing authorized passw
 - `regroup-units`: exact current `before_ids`, `block_id`, and ordered zero-based `groups`, e.g. `[[0],[1,2],[3]]`. Every unit appears once; concatenation adds spaces only.
 - `order-blocks`: `document_id`, `page`, exact current `before_ids` and a complete `after_ids` permutation. No dropping or duplicating blocks.
 - `asset-label-policy`: `block_id`, `policy` (retained-original/no-text/translated) and source-based `note`. A translated-label claim requires actual label units; untouched outlines are original labels.
-- `transcribe-table`: inspected `evidence_file` under reports/region-ocr identifying a raster-table proposal, literal rectangular `rows` including empty cells, optional `header_rows`. Caption/page ownership must agree. Existing tables cannot be duplicated.
-- `transcribe-page`: `document_id`, `page`, `evidence_file`, ordered `regions` of literal `text`, `bbox`, optional `type`, `role`, `level`. Use the original `previews/D001-p0001.png` for a PDF or the original raster source file. PDF bboxes use page points/top-left; raster bboxes use source pixels/top-left. Regions must lie within the selected source page. Existing native/OCR text is rejected; correct it instead. The original full-page raster stays archived instead of reappearing as duplicated untranslated prose. Retain unreadable areas as unresolved findings, never complete them.
+- `transcribe-table`: legacy non-PDF raster sources only; PDF sources are rejected. Inspect the source-bound evidence and supply literal rectangular rows including empty cells. Caption/page ownership must agree; existing tables cannot be duplicated.
+- `transcribe-page`: separately selected non-PDF raster inputs only; PDF sources are rejected. Use the original image as evidence and source-pixel geometry. This operation is never a PDF extraction fallback.
 - `resolve-issue`: exact `issue_index` and the actual evidence-backed disposition. Resolving a warning does not create missing content or review evidence.
 
 The bundled parser proposes text roles, joins and spatial regions. The figure model proposes caption ownership and source crops; raster ownership isolation avoids including adjacent art while retaining complete owned panels. Crop text/font/coordinates remain archived. The parser layout map is refreshed after checked source changes.

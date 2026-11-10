@@ -14,10 +14,10 @@ def run(output,browser=None):
  out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
  project=out/'project'
  if project.exists():raise ValueError('Use a fresh test directory; existing results are preserved.')
- report={'version':'1.0.2','checks':[],'scope':'Original owned color fixtures and actual browser/PDF/editor HTML/DOCX round trips. No semantic certification.'}
+ report={'version':'1.0.3','checks':[],'scope':'Original owned color fixtures and actual browser/PDF/editor HTML/DOCX round trips. No semantic certification.'}
  def check(name,value,detail=None):
   report['checks'].append({'name':name,'pass':bool(value),'detail':detail})
-  (out/'asset-fidelity-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+  (out/'asset-fidelity-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', encoding='utf-8')
   if not value:raise AssertionError(name+': '+str(detail))
  with contextlib.redirect_stdout(io.StringIO()):
   t.init(argparse.Namespace(project=str(project),title='Color fidelity fixtures',languages='en',style='editorial',page_size='A4',columns=1))
@@ -100,7 +100,7 @@ def run(output,browser=None):
   fallback='data:image/png;base64,'+base64.b64encode((project/'assets/cmyk.png').read_bytes()).decode()
   sanitized=pg.evaluate('s=>Studio.sanitize(s).body.innerHTML','<img src="'+uri+'" data-raster-fallback="'+fallback+'">')
   check('legacy unsafe SVG uses PNG', 'unsafe-vector-replaced-with-png' in sanitized and 'src="data:image/png;' in sanitized)
-  awaitless=pg.evaluate('(html)=>Studio.importHTML(html,"Owned color regression")',(project/'outputs/en-faithful.html').read_text())
+  awaitless=pg.evaluate('(html)=>Studio.importHTML(html,"Owned color regression")',(project/'outputs/en-faithful.html').read_text( encoding='utf-8'))
   preview=pg.evaluate('Studio.preview()');check('editor source import preview passes',preview['pass'],preview)
   check('all source figure assets survive editor',sum(x['images'] for x in preview['pages'])==len(cases)+1)
   for kind in ['html','docx']:
@@ -111,7 +111,7 @@ def run(output,browser=None):
    vectors=[x for x in z.namelist() if x.startswith('word/media/') and x.endswith('.svg')]
    check('DOCX retains all source SVGs',len(vectors)==len(cases),len(vectors))
    check('DOCX SVG embedded rasters safe',all(all(r['components'] in (1,3) for r in v.embedded_raster_colors(z.read(x))) for x in vectors))
-  pg.evaluate('(html)=>Studio.importHTML(html,"HTML round trip")',(out/'editor-color-export.html').read_text())
+  pg.evaluate('(html)=>Studio.importHTML(html,"HTML round trip")',(out/'editor-color-export.html').read_text( encoding='utf-8'))
   check('exported HTML reimports',pg.evaluate('Studio.preview().then(r=>r.pass)'))
   data=base64.b64encode((out/'editor-color-export.docx').read_bytes()).decode()
   imported=pg.evaluate('async s=>Formats.importDocx(Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer)',data)
@@ -125,10 +125,12 @@ def run(output,browser=None):
   check('editor actual PDF figures match source',editor_figures['pass'],editor_figures)
   pg.screenshot(path=str(out/'editor-color-preview.png'));br.close()
  report['pass']=all(x['pass'] for x in report['checks'])
- (out/'asset-fidelity-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ (out/'asset-fidelity-regression.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', encoding='utf-8')
  print(json.dumps({'pass':report['pass'],'checks':len(report['checks'])}))
  return report
 
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True);p.add_argument('--browser',default=os.environ.get('TRANSLATION_BROWSER'));a=p.parse_args()
  raise SystemExit(0 if run(a.output,a.browser)['pass'] else 1)

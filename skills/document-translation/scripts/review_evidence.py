@@ -6,7 +6,7 @@ from refinement import check_manifest
 
 def create(project_path,kind,output):
  import layout_engine
- r,m,c=project(project_path);record={'schema_version':'1.0.2','kind':kind,'snapshot':snap(m,c),'reviewer':'','summary':'Complete after inspecting every enumerated item; this checklist is not itself evidence.','findings':[]}
+ r,m,c=project(project_path);record={'schema_version':'1.0.3','kind':kind,'snapshot':snap(m,c),'reviewer':'','summary':'Complete after inspecting every enumerated item; this checklist is not itself evidence.','findings':[]}
  if kind=='semantic':
   record['editions']=list(m['editions']);record['unit_reviews']=[{'unit_id':u['id'],'faithful':'pending','interpretive':'pending','observation':''} for _,u in units(c)]
  elif kind=='extraction':
@@ -49,4 +49,7 @@ def main():
  try:create(a.project,a.kind,a.output)
  except (ValueError,KeyError,FileNotFoundError) as e:print(str(e),file=sys.stderr);return 1
  return 0
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    from runtime_encoding import configure_utf8
+    configure_utf8()
+    sys.exit(main())

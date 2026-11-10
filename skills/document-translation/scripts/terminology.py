@@ -18,6 +18,8 @@ def check(root,glossary):
      if not any(t in target for t in allowed):findings.append({'id':u['id'],'source_term':src,'language':lang,'edition':edition,'expected_any':allowed,'severity':term.get('severity','review'),'locator':b['source']})
  return {'findings':findings,'automatic_replacement':False,'note':'Context, morphology and legitimate alternatives need semantic review; zero findings does not prove consistent terminology.'}
 if __name__=='__main__':
+ from runtime_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('project');p.add_argument('glossary');p.add_argument('--output');a=p.parse_args();result=check(a.project,a.glossary)
  if a.output:write(a.output,result)
  print(json.dumps(result,ensure_ascii=False,indent=2))

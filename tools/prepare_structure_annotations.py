@@ -72,7 +72,7 @@ def prepare(files,output,split='test',dpi=108,source_parent_sha256=None,page_num
             'source_page_count':source_page_count,'split':split,'pages':pages,
             'profile':profile,'label_source':'pending source-only inspection',
             'content_structure_metrics':{}})
-    data={'version':'1.0.2','extraction_revision':structure.EXTRACTION_REVISION,
+    data={'version':'1.0.3','extraction_revision':structure.EXTRACTION_REVISION,
           'feature_revision':structure.FEATURE_REVISION,'annotation_protocol':'Unlabeled source evidence. Author roles, paragraph groups, spatial reading regions and unresolved flags from complete source inspection before opening predictions. No trained model loaded.',
           'documents':documents}
     (output/'unlabeled.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
@@ -93,4 +93,7 @@ def main():
     print(json.dumps(prepare(args.files,args.output,args.split,args.dpi,args.source_parent_sha256,selected)))
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

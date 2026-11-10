@@ -9,7 +9,8 @@ The CLI extracts source material into a common content model. The model in the c
 | Input | Extraction route | What to inspect |
 |---|---|---|
 | Native PDF | Model-proposed roles/links/regions, native text evidence, page previews and figure crops; optional native tables | Column order, hidden text, formulas, tables and vector figures |
-| Scanned PDF or raster image | Page previews, local OCR or checked source-bound transcription | Every recognized passage, names, quantities and unreadable regions |
+| Scanned PDF | Original page artwork and available native evidence; no OCR or agent transcription | Unavailable text and incomplete translation scope |
+| Non-PDF raster image | Legacy local recognition helpers, separate from PDF routes | Recognized text, quantities and unreadable regions |
 | DOCX | OOXML paragraphs, tables, media, notes, headers and footers | Numbering, fields, text boxes, equations, anchors and merged cells |
 | Static HTML | Visible text and structure; source scripts are ignored | Images, hidden content and tables; complex tables may be flattened |
 | Markdown or UTF-8 text | Paragraphs and heading hints | Code fences, lists and other structure needing repair |
@@ -22,13 +23,17 @@ The CLI extracts source material into a common content model. The model in the c
 
 Spreadsheet formulas are never evaluated. PowerPoint and spreadsheet inputs produce reading editions. They do not become a reconstructed slide deck or a recalculated workbook.
 
-Encrypted PDFs need an authorized password. OCR engines, converters and their language packs are installed separately. Conversion records include source and intermediate hashes.
+Encrypted PDFs need an authorized password. Optional non-PDF recognition engines and converters are installed separately. PDF extraction requires PyMuPDF 1.26.4 or later. Conversion records include source and intermediate hashes.
 
 ## PDF structure and font maps
 
 Default PDF ingestion uses an offline model to propose roles, paragraph links and reading regions. `--structure native` retains the native extraction route. `--tables` in auto mode selects native cell extraction. Figure and table classifications, captions, columns and formulas remain reviewable proposals.
 
 Systematically garbled text on a readable page may indicate a missing font map. The optional FontTools helper supports a restricted set of Identity-H/CIDFontType2 fonts and writes a new PDF. It retains existing maps and records ambiguous glyph decisions. See [font-map recovery](../skills/document-translation/references/font-map-recovery.md) and the [source model card](../skills/document-translation/assets/models/SOURCE_STRUCTURE_MODEL_CARD.md).
+
+Supported native tables use a numerical cell-link model with source-rule and column constraints. Independent topology checks reject overlapping or incomplete merged cells. Unsupported hierarchical tables retain complete artwork and an unresolved finding. See the [table model card](../skills/document-translation/assets/models/TABLE_CELL_MODEL_CARD.md).
+
+Repeated margin furniture is archived outside the body translation tasks. Source footnotes and prose continuations remain in scope. Source math glyphs may be retained by verified outlines; that preserves appearance without recovering unknown Unicode or mathematical meaning.
 
 ## Generated documents
 

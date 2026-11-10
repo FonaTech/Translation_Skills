@@ -9,11 +9,11 @@ import base64
 import json
 import os
 
-GATE_VERSION = 'source-appearance-1.0.1'
-PDF_COMPARISON_VERSION = 'physical-page-grid-1'
+GATE_VERSION = 'source-appearance-1.0.3-raster-completeness-2'
+PDF_COMPARISON_VERSION = 'physical-page-grid-3-live-source-fonts'
 
 
-def compare_pdf_region(source_page, source_bbox, output_page, output_bbox, reference, candidate, native_text_exclusions=None, raster_xrefs=None):
+def compare_pdf_region(source_page, source_bbox, output_page, output_bbox, reference, candidate, native_text_exclusions=None, raster_xrefs=None, source_frame=None, output_frame=None, render_cache=None):
     """Render declared source/output regions on the same physical pixel grid.
 
     Independently clipped pixmaps round their edges to different device pixels.
@@ -21,6 +21,8 @@ def compare_pdf_region(source_page, source_bbox, output_page, output_bbox, refer
     Place the source crop at the declared output rectangle on an empty page,
     then render both pages with identical clips, resolution and RGB settings.
     No offset search, content matching or threshold adjustment is performed.
+    An optional cache must be scoped to one verification of immutable documents.
+    It stores display lists, not rendered pixels; every crop is still compared.
     """
     import fitz
     source_bbox, output_bbox = fitz.Rect(source_bbox), fitz.Rect(output_bbox)
@@ -28,20 +30,72 @@ def compare_pdf_region(source_page, source_bbox, output_page, output_bbox, refer
         raise ValueError('Invalid source comparison region.')
     if output_bbox.is_empty or not output_page.rect.contains(output_bbox):
         raise ValueError('Invalid output comparison region.')
+    # Preserve the enclosing native object's transform for a glyph check.
+    # Re-fitting a tiny glyph independently can quantize font hinting differently
+    # from the same glyph inside its enclosing source object. Sampling remains
+    # on the declared output grid, with the original comparison thresholds.
+    if (source_frame is None)!=(output_frame is None):
+        raise ValueError('Both physical comparison frames are required.')
+    source_frame=fitz.Rect(source_frame) if source_frame is not None else source_bbox
+    output_frame=fitz.Rect(output_frame) if output_frame is not None else output_bbox
+    if source_frame.is_empty or not source_page.rect.contains(source_frame) or not source_frame.contains(source_bbox):
+        raise ValueError('Invalid source comparison frame.')
+    if output_frame.is_empty or not output_page.rect.contains(output_frame) or not (output_frame+(-.001,-.001,.001,.001)).contains(output_bbox):
+        raise ValueError('Invalid output comparison frame.')
+    from vector_assets import check_raster_completeness
+    check_raster_completeness(source_page, source_frame, raster_xrefs)
     # Up to 576 dpi retains small line art; cap large figure memory.
     scale = min(8, 1536 / max(output_bbox.width, output_bbox.height))
-    with fitz.open() as expected:
-        page = expected.new_page(width=output_page.rect.width, height=output_page.rect.height)
-        from vector_assets import source_crop_page
-        with source_crop_page(source_page,native_text_exclusions,raster_xrefs) as reviewed:
-            page.show_pdf_page(output_bbox, reviewed.parent, reviewed.number,
-                               clip=source_bbox, keep_proportion=False)
-        for pg, destination in [(page, reference), (output_page, candidate)]:
-            pg.get_pixmap(clip=output_bbox, matrix=fitz.Matrix(scale, scale),
-                          colorspace=fitz.csRGB, alpha=False).save(destination)
+    from contextlib import ExitStack
+    def expected_display_list(stack):
+        expected=stack.enter_context(fitz.open())
+        try:
+            page = expected.new_page(width=output_page.rect.width, height=output_page.rect.height)
+            from vector_assets import source_crop_page
+            with source_crop_page(source_page,native_text_exclusions,raster_xrefs) as reviewed:
+                page.show_pdf_page(output_frame, reviewed.parent, reviewed.number,
+                                   clip=source_frame, keep_proportion=False)
+            return page.get_displaylist()
+        except BaseException:
+            expected.close()
+            raise
+    # A verification-scoped cache reuses immutable display lists, never rendered
+    # pixels, clip coordinates, sampling phases or tolerances. Thousands of
+    # glyphs on a page still receive separate full-resolution pixel checks.
+    # Embedded Type 3 fonts can be lazily resolved from the temporary document.
+    # A display list outliving that document silently drops all such text.
+    # Retain cached documents alongside their lists until this verification ends.
+    with ExitStack() as live:
+        if render_cache is None:
+            expected_list=expected_display_list(live);output_list=output_page.get_displaylist()
+        else:
+            expected_key=('source',id(source_page.parent),source_page.number,tuple(source_frame),
+                tuple(output_frame),tuple(output_page.rect),
+                json.dumps(native_text_exclusions or [],sort_keys=True),tuple(raster_xrefs or []))
+            output_key=('output',id(output_page.parent),output_page.number)
+            if expected_key not in render_cache:
+                cache_stack=ExitStack()
+                try:
+                    display=expected_display_list(cache_stack)
+                except BaseException:
+                    cache_stack.close();raise
+                render_cache[expected_key]=(display,cache_stack)
+            if output_key not in render_cache:render_cache[output_key]=output_page.get_displaylist()
+            expected_list=render_cache[expected_key][0];output_list=render_cache[output_key]
+        for display,destination in [(expected_list,reference),(output_list,candidate)]:
+            display.get_pixmap(clip=output_bbox,matrix=fitz.Matrix(scale,scale),
+                               colorspace=fitz.csRGB,alpha=False).save(destination)
     return {**compare_images(reference, candidate),
             'comparison_method': PDF_COMPARISON_VERSION,
-            'render_scale': scale, 'source_bbox': list(source_bbox)}
+            'render_scale': scale, 'source_bbox': list(source_bbox),
+            'source_frame':list(source_frame),'output_frame':list(output_frame)}
+
+
+def close_render_cache(cache):
+    """Release verification-owned source documents and lists deterministically."""
+    for key,value in cache.items():
+        if key[0]=='source':value[1].close()
+    cache.clear()
 
 
 def compare_images(reference, candidate):
@@ -95,7 +149,7 @@ def verify_project(path, browser=None):
     from PIL import Image
     from playwright.sync_api import sync_playwright
     from translate import project, safe, sha, write, digest
-    from vector_assets import export_crop, embedded_raster_colors, source_crop_page
+    from vector_assets import export_crop, embedded_raster_colors, source_crop_page, check_raster_completeness
     r, m, c = project(path)
     from structure_layout import read_map
     for source in c['sources']:
@@ -145,12 +199,35 @@ def verify_project(path, browser=None):
                 if bb.is_empty:
                     raise ValueError('Figure is completely outside the source page: ' + b['id'])
                 rec['effective_visible_bbox'] = list(bb)
+                rec['raster_completeness'] = check_raster_completeness(pg, bb, rec['raster_xrefs'])
                 scale = min(2.5, 2400 / max(bb.width, bb.height))
                 ref = out / (b['id'] + '-source.png')
                 with source_crop_page(pg,rec['native_text_exclusions'],rec['raster_xrefs']) as reviewed:
                     reviewed.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=bb, colorspace=fitz.csRGB, alpha=False).save(ref)
                 with Image.open(ref) as im:
                     width, height = im.size
+                # Keep the original PDF image sampling/transform until print.
+                # A previously rasterized crop introduces a second resampling
+                # phase even at high DPI; native SVG also preserves mask context.
+                if (asset.suffix.lower()=='.png' and not pg.rotation and
+                    b.get('vector',{}).get('representation')=='source-rendered-png'):
+                    try:
+                        crop=export_crop(pg,bb,asset.with_suffix(''),scale=8,
+                            native_text_exclusions=rec['native_text_exclusions'],raster_xrefs=rec['raster_xrefs'])
+                        asset=crop['vector'];b['asset']=asset.relative_to(r).as_posix()
+                        b['asset_sha256']=sha(asset);b['asset_fallback']=crop['fallback'].relative_to(r).as_posix()
+                        b['asset_fallback_sha256']=sha(crop['fallback']);b['vector']=crop['metadata']
+                        rec['native_image_sampling_restored']=True
+                    except (ValueError,RuntimeError):pass
+                if asset.suffix.lower()=='.png':
+                    required_scale=min(8,4096/max(bb.width,bb.height))
+                    with Image.open(asset) as raster:upgrade=raster.width<bb.width*required_scale*.98 or raster.height<bb.height*required_scale*.98
+                    if upgrade:
+                        with source_crop_page(pg,rec['native_text_exclusions'],rec['raster_xrefs']) as reviewed:
+                            reviewed.get_pixmap(matrix=fitz.Matrix(required_scale,required_scale),clip=bb,colorspace=fitz.csRGB,alpha=False).save(asset)
+                        b['asset_sha256']=sha(asset)
+                        if b.get('asset_fallback')==b['asset']:b['asset_fallback_sha256']=sha(asset)
+                        rec['resolution_upgrade_from_source']=True
                 candidate = out / (b['id'] + '-browser.png')
                 try:
                     browser_raster(tab, asset, candidate, width, height)
@@ -261,7 +338,7 @@ def verify_rendered_figures(project_path, browser_page, pdf_path, edition, page_
     browser_page.emulate_media(media='print')
     dom = browser_page.evaluate('''selector=>[...document.querySelectorAll(selector)].map((p,i)=>{
       const r=p.getBoundingClientRect();return {page:i+1,w:r.width,h:r.height,images:
-      [...p.querySelectorAll('figure[data-block] img')].map(im=>{
+      [...p.querySelectorAll('figure[data-block] > img, figure[data-block] > picture > img')].map(im=>{
         const b=im.getBoundingClientRect(),cs=getComputedStyle(im);let nw=im.naturalWidth,nh=im.naturalHeight;
         // HTMLImageElement rounds SVG intrinsic dimensions to integers. Object
         // fit uses the fractional SVG ratio; rounding it shifts the PDF crop.
@@ -419,6 +496,8 @@ def rendered_release_errors(r, m, c):
 
 
 if __name__ == '__main__':
+    from runtime_encoding import configure_utf8
+    configure_utf8()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('project')
     parser.add_argument('--browser')

@@ -58,7 +58,7 @@ class ReaderUITests(unittest.TestCase):
             self.assertNotIn('<script', output)
 
     def test_complete_catalogs(self):
-        catalogs = json.loads((reader_ui.ASSETS / 'reader-locales.json').read_text())
+        catalogs = json.loads((reader_ui.ASSETS / 'reader-locales.json').read_text( encoding='utf-8'))
         self.assertEqual(len(catalogs), 16)
         for labels in catalogs.values():
             self.assertEqual(set(labels), set(catalogs['en']))

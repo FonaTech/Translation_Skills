@@ -8,7 +8,7 @@
       "name": "translation-skills",
       "source": "./",
       "description": "Complete faithful and interpretive multilingual document editions with HTML/PDF and source alignment.",
-      "version": "1.0.2"
+      "version": "1.0.3"
     }
   ]
 }

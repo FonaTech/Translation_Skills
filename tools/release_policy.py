@@ -13,7 +13,7 @@ PUBLIC_ROOT_FILES = frozenset({
 })
 PUBLIC_DOCUMENTATION = frozenset({
     'docs/ARCHITECTURE.md', 'docs/INSTALL.md', 'docs/REPRODUCIBILITY.md',
-    'docs/SUPPORT.md', 'docs/WORKFLOW.md',
+    'docs/SUPPORT.md', 'docs/WORKFLOW.md', 'docs/WEBUI.md',
 })
 EXCLUDED_PARTS = frozenset({
     'ACKNOWLEDGMENTS.md',

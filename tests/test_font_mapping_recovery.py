@@ -52,7 +52,7 @@ class FontRecoveryIntegrationTests(unittest.TestCase):
             self.assertTrue(result['appearance_preserved']);self.assertFalse(result['source_text_correctness_certified'])
             self.assertEqual(initial,hashlib.sha256(source.read_bytes()).hexdigest())
             with fitz.open(out) as pdf:self.assertIn('AB A',pdf[0].get_text())
-            evidence=json.loads(report.read_text());self.assertTrue(evidence['review_required'])
+            evidence=json.loads(report.read_text( encoding='utf-8'));self.assertTrue(evidence['review_required'])
             with self.assertRaises(FileExistsError):recover(source,out,report,[font])
             with self.assertRaisesRegex(ValueError,'No supported missing mapping'):recover(out,base/'second.pdf',base/'second.json',[font])
 

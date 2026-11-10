@@ -4,6 +4,12 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent/'skills/document-translation/scripts'))
 import layout_engine as le,publishing as pub
 class ReadabilityTests(unittest.TestCase):
+ def test_factorial_before_clause_is_not_a_sentence_boundary(self):
+  import translate as t
+  text='The phase space is divided by N!, the number of permutations. The next condition remains.'
+  self.assertEqual(t.split_text(text),['The phase space is divided by N!, the number of permutations.','The next condition remains.'])
+  self.assertEqual(t.split_text('Stop! Next instruction.'),['Stop!','Next instruction.'])
+
  def test_white_watermark_is_not_heading_ink(self):
   self.assertEqual(le.readable_accent('#fff6f6'),'#304659')
   self.assertEqual(le.readable_accent('#ffffff',None),None)

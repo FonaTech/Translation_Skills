@@ -21,7 +21,7 @@ After ingestion, run `python3 scripts/translate.py workflow PROJECT --advance --
 
 PDF ingestion defaults to the offline structure model. Use `--structure native` when native extraction is appropriate; default auto mode with `--tables` uses native cells. Inspect proposals against source evidence before translating. Read [structure training](references/structure-training.md) and the [source model card](assets/models/SOURCE_STRUCTURE_MODEL_CARD.md) when diagnosing structure or changing the model.
 
-Readable pages with a damaged text layer may need [font-map recovery](references/font-map-recovery.md) or source-reviewed OCR/transcription. Preserve original and repaired-copy identities.
+PDF routes use native text, embedded font outlines, vector artwork and page geometry only. Reject PDF OCR and page/table transcription, including cropped raster tables. Preserve unavailable text as source artwork with explicit incomplete findings. Existing embedded text layers remain source evidence. Restricted [font-map recovery](references/font-map-recovery.md) can help damaged maps; preserve original and repaired-copy identities. Non-PDF raster helpers are separate.
 
 ## Translate and compare
 
@@ -34,6 +34,8 @@ The invoking model supplies the translations. Scripts manage extraction, exchang
 Compare every source unit against both editions. Check negation, modality, conditions, names, numbers, units, references, table positions and consequential order. Distinguish blank, absent, zero, unknown and literal N/A. Never guess unreadable text. Translate captions and figure labels or record retained-label exceptions. Fix `content.json`, preserving IDs and source locations. See [review and release](references/review-and-release.md).
 
 Short tasks can use these rules without creating a large project. For longer work, persist the glossary and completed IDs, then resume pending passages. `scripts/terminology.py` provides optional glossary checks.
+
+Native table-cell links are constrained by source geometry and independent topology checks. Retain unresolved tables as complete source artwork. Inspect archived running furniture and source math glyph evidence before accepting extraction. See [table model limits](assets/models/TABLE_CELL_MODEL_CARD.md).
 
 ## Build and inspect the pages
 

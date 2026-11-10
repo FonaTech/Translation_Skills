@@ -24,11 +24,11 @@ def checklist_current(r,m,c,kind,data):
     return True
 
 def run(a):
-    r,m,c=project(a.project);state={'schema_version':'1.0.2','source_hash':source_snap(m,c),'snapshot':snap(m,c),'translation_provider':'current invoking agent loop','external_model_required':False,'complete':False}
+    r,m,c=project(a.project);state={'schema_version':'1.0.3','source_hash':source_snap(m,c),'snapshot':snap(m,c),'translation_provider':'current invoking agent loop','external_model_required':False,'complete':False}
     if not c['sources']:state.update(stage='ingest',next_action='Ingest the selected original documents.')
     elif any(x.get('status')=='open' for x in c.get('issues',[])):
         from source_review import prepare
-        state.update(stage='source-review',task=str(prepare(r).relative_to(r)),next_action='Current host agent opens all selected source images and OCR/crop evidence, returns checked source-review operations, then resumes workflow. Never use document-specific repair scripts.')
+        state.update(stage='source-review',task=str(prepare(r).relative_to(r)),next_action='Inspect selected native-text/font/vector and crop evidence, return checked source-review operations, then resume. PDF OCR/transcription is disabled: retain and disclose unavailable text rather than filling it. Never use document-specific repair scripts.')
     else:
         missing={l:sum(not all(isinstance(u.get('translations',{}).get(l,{}).get(e),str) and (not u['source'].strip() or u['translations'][l][e].strip()) for e in m['editions']) for _,u in units(c)) for l in m['target_languages']}
         if any(missing.values()):

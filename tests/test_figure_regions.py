@@ -9,6 +9,103 @@ import translate as t
 import layout_engine
 
 class FigureRegionTests(unittest.TestCase):
+ def test_raster_strips_merge_before_minimum_figure_height_gate(self):
+  import fitz
+  from PIL import Image
+  with tempfile.TemporaryDirectory() as directory:
+   d=fitz.open();p=d.new_page(width=600,height=800)
+   for i in range(10):
+    image=Image.new('RGB',(160,16),(30+i*15,70,120));stream=io.BytesIO();image.save(stream,format='PNG')
+    p.insert_image(fitz.Rect(40,100+i*8,120,108+i*8),stream=stream.getvalue())
+   image=Image.new('RGB',(60,14),(240,190,20));stream=io.BytesIO();image.save(stream,format='PNG')
+   p.insert_image(fitz.Rect(65,130,95,137),stream=stream.getvalue())
+   cap={'id':'cap','type':'paragraph','source':{'bbox':[40,195,250,215]},
+        'units':[{'source':'Figure 1. A source plate serialized into short strips.'}],
+        'presentation':{'role':'caption'}}
+   proposals=f.propose(p,[cap]);self.assertEqual(len(proposals),1)
+   plate=proposals[0];self.assertEqual(plate['caption_block_ids'],['cap'])
+   self.assertLessEqual(plate['bbox'][1],100);self.assertGreaterEqual(plate['bbox'][3],180)
+   self.assertEqual(len(plate['raster_xrefs']),11);d.close()
+
+ def test_label_chains_do_not_merge_independent_figures_or_absorb_display(self):
+  import fitz
+  d=fitz.open();p=d.new_page(width=600,height=800)
+  for box in [(40,150,230,280),(330,150,550,280)]:p.draw_rect(fitz.Rect(box))
+  blocks=[]
+  for label,box in [('left',[40,310,260,330]),('right',[330,310,550,330])]:
+   blocks.append({'id':label,'type':'paragraph','source':{'bbox':box},
+      'units':[{'source':'Figure '+('1' if label=='left' else '2')+'. Independent plate.'}],
+      'presentation':{'role':'caption'}})
+  for i,x in enumerate([225,245,265,285,305,325]):
+   blocks.append({'id':'label'+str(i),'type':'paragraph','source':{'bbox':[x,200,x+15,210]},
+      'units':[{'source':'Label'}],'structure':{'semantic_role':'label'}})
+  formula={'id':'formula','type':'equation','source':{'bbox':[400,130,540,148]},'units':[],
+           'formula_detection':{'kind':'display'},'structure':{'semantic_role':'equation'}}
+  duplicate={'id':'duplicate','type':'paragraph','source':{'bbox':[410,132,535,145]},
+             'units':[{'source':'Unresolved duplicate formula layer'}],'structure':{'semantic_role':'label'}}
+  proposals=f.propose(p,blocks+[formula,duplicate]);self.assertEqual(len(proposals),2)
+  left=next(r for r in proposals if r['caption_block_ids']==['left'])
+  right=next(r for r in proposals if r['caption_block_ids']==['right'])
+  self.assertLess(left['bbox'][2],right['bbox'][0]);self.assertGreaterEqual(right['bbox'][1],148)
+  self.assertNotIn('duplicate',right['contained_label_block_ids'])
+  self.assertNotIn('label0',right['contained_label_block_ids'])
+  self.assertNotIn('label5',left['contained_label_block_ids']);d.close()
+
+ def test_subpoint_raster_strips_retain_complete_source_plate(self):
+  import fitz
+  from PIL import Image
+  d=fitz.open();p=d.new_page(width=300,height=400)
+  for i in range(40):
+   image=Image.new('RGB',(160,1),(20+i*5,40,100));stream=io.BytesIO();image.save(stream,format='PNG')
+   p.insert_image(fitz.Rect(40,100+i*.5,120,100+(i+1)*.5),stream=stream.getvalue(),keep_proportion=False)
+  cap={'id':'cap','type':'paragraph','source':{'bbox':[40,135,250,155]},
+       'units':[{'source':'Figure 1. A complete thin source plate.'}],'presentation':{'role':'caption'}}
+  proposals=f.propose(p,[cap]);self.assertEqual(len(proposals),1)
+  plate=proposals[0];self.assertEqual(plate['caption_block_ids'],['cap'])
+  self.assertLessEqual(plate['bbox'][1],100);self.assertGreaterEqual(plate['bbox'][3],120)
+  self.assertEqual(len(plate['raster_xrefs']),40);d.close()
+
+ def test_oversized_proposal_keeps_decoded_display_and_ambiguous_text(self):
+  import fitz
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);d=fitz.open();p=d.new_page(width=600,height=800)
+   c={'sources':[{'id':'D001'}],'blocks':[]}
+   captions=[t.add_block(c,'D001','paragraph',{'page':1,'bbox':[x,300,x+200,320]},
+      ['Figure '+str(i+1)+'. Source caption.'],presentation={'role':'caption'}) for i,x in enumerate([40,330])]
+   equation=t.add_block(c,'D001','equation',{'page':1,'bbox':[400,125,540,145]},[],
+      formula_detection={'kind':'display'},structure={'semantic_role':'equation'})
+   left=t.add_block(c,'D001','paragraph',{'page':1,'bbox':[90,200,130,210]},['A source label'],structure={'semantic_role':'label'})
+   ambiguous=t.add_block(c,'D001','paragraph',{'page':1,'bbox':[272,200,288,210]},['Tied label'],structure={'semantic_role':'label'})
+   saved=copy.deepcopy(equation)
+   proposals=[{'bbox':[35,120,555,285],'caption_block_ids':[cap['id']],
+       'contained_label_block_ids':[equation['id'],left['id'],ambiguous['id']],
+       'source_component_bboxes':[box]} for cap,box in zip(captions,[[40,150,230,280],[330,150,550,280]])]
+   # Assets are irrelevant to this ownership test; the other tests exercise
+   # actual PDF extraction and compare the exported artwork.
+   with mock.patch.object(f,'propose',return_value=proposals),mock.patch.object(f,'export_region',return_value={'asset':'fixture.svg','crop_text':{}}):
+    records=f.append_page(root,c,'D001',p,t.add_block)
+   self.assertEqual(next(b for b in c['blocks'] if b['id']==equation['id']),saved)
+   self.assertIn(ambiguous,c['blocks']);self.assertNotIn(left,c['blocks'])
+   images=[b for b in c['blocks'] if b['type']=='image']
+   self.assertEqual(images[0]['source_label_blocks'],[left]);self.assertNotIn('source_label_blocks',images[1])
+   self.assertEqual(len(records),2);d.close()
+
+ def test_one_joined_paragraph_per_column_retains_native_column_count(self):
+  import fitz,structure_layout
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory)
+   with fitz.open() as doc:
+    doc.new_page(width=600,height=800);doc.save(root/'source.pdf')
+   source={'id':'D001','file':'source.pdf','sha256':t.sha(root/'source.pdf')}
+   content={'sources':[source],'blocks':[]}
+   for x,label in [(40,'left'),(330,'right')]:
+    t.add_block(content,'D001','paragraph',{'page':1,'bbox':[x,80,x+220,400],
+       'physical_row_ids':[label+str(i) for i in range(25)]},['A complete joined source paragraph. '*8])
+   structure_layout.write_map(root,content,source)
+   parsed=structure_layout.read_map(root,source,content)
+   self.assertEqual(parsed['pages'][0]['columns'],2)
+   self.assertEqual([r['column'] for r in parsed['pages'][0]['blocks']],[1,2])
+
  def test_single_parser_band_does_not_erase_measured_multiple_columns(self):
   with tempfile.TemporaryDirectory() as directory:
    root=Path(directory);source=self.fixture(root)
@@ -97,7 +194,7 @@ class FigureRegionTests(unittest.TestCase):
    tasks=t.parser().parse_args(['tasks',str(p),'--language','zh-Hans','--all'])
    with contextlib.redirect_stdout(io.StringIO()):tasks.fn(tasks)
    context=t.read(p/'tasks/zh-Hans-figure-context.json');self.assertEqual(len(context['figures']),1)
-   (p/b['crop_text']['text_file']).write_text('tampered')
+   (p/b['crop_text']['text_file']).write_text('tampered', encoding='utf-8')
    self.assertIn('crop-text-evidence',[x['code'] for x in t.audit_data(p,m,c)['errors']])
  def test_scan_preserves_page_image_and_marks_native_text_unknown(self):
   import fitz
@@ -105,7 +202,8 @@ class FigureRegionTests(unittest.TestCase):
    root=Path(directory);d=fitz.open(self.fixture(root));pix=d[0].get_pixmap();scan=fitz.open();p=scan.new_page(width=600,height=800);p.insert_image(p.rect,pixmap=pix)
    proposals=f.propose(p,[]);self.assertEqual(len(proposals),1)
    evidence=f.export_region(p,p.rect,root/'crop',root)
-   data=t.read(root/evidence['crop_text']['file']);self.assertEqual(data['lines'],[]);self.assertTrue(data['ocr_required_if_visible_text_missing'])
+   data=t.read(root/evidence['crop_text']['file']);self.assertEqual(data['lines'],[]);self.assertFalse(data['ocr_required_if_visible_text_missing'])
+   self.assertFalse(data['pdf_ocr_allowed']);self.assertIn('unavailable',data['native_text_status'])
    self.assertEqual(proposals[0]['caption_block_ids'],[]);scan.close();d.close()
  def test_caption_in_other_column_does_not_bind(self):
   import fitz
@@ -143,10 +241,25 @@ class FigureRegionTests(unittest.TestCase):
   self.assertLessEqual(first['bbox'][0],40);self.assertGreaterEqual(first['bbox'][2],550)
   self.assertLess(first['bbox'][3],330);self.assertGreater(second['bbox'][1],355)
   self.assertIn('bounded-caption-band',first['association_routes']);d.close()
+ def test_dense_eight_panel_plate_and_serialized_rotated_labels(self):
+  import fitz
+  d=fitz.open();p=d.new_page(width=612,height=792)
+  for y in [59,229,399,569]:
+   for x in [94,345]:p.draw_rect(fitz.Rect(x,y,x+195,y+123))
+  blocks=[{'id':'cap','type':'paragraph','source':{'bbox':[49,735,563,761]},'units':[{'source':'Fig. 4. Eight panels of the same measured experiment.'}],'presentation':{'role':'caption'}}]
+  for i,y in enumerate([59,229,399,569]):
+   blocks.extend([{'id':f'axis{i}','type':'paragraph','source':{'bbox':[56,y+46,67,y+76]},'units':[{'source':'Signal (%)'}],'structure':{'semantic_role':'label'}},
+     {'id':f'tick{i}','type':'paragraph','source':{'bbox':[76,y+46,89,y+54]},'units':[{'source':'0.5'}],'structure':{'semantic_role':'label'}}])
+  learned={'id':'fixture','link_head':{},'link_threshold':.7}
+  with mock.patch('figure_learning.load_model',return_value=learned),mock.patch('figure_learning.predict',return_value=[.01]):proposals=f.propose(p,blocks)
+  self.assertEqual(len(proposals),1);plate=proposals[0]
+  self.assertEqual(plate['caption_block_ids'],['cap']);self.assertLessEqual(plate['bbox'][0],56)
+  self.assertLessEqual(plate['bbox'][1],59);self.assertGreaterEqual(plate['bbox'][3],692)
+  self.assertTrue({f'axis{i}' for i in range(4)}<=set(plate['contained_label_block_ids']));d.close()
  def test_stale_parser_layout_rejected(self):
   import structure_layout
   with tempfile.TemporaryDirectory() as directory:
-   root=Path(directory);(root/'map.json').write_text('{}')
+   root=Path(directory);(root/'map.json').write_text('{}', encoding='utf-8')
    with self.assertRaises(ValueError):structure_layout.read_map(root,{'layout_ir':{'file':'map.json','sha256':'bad'},'sha256':'source'})
  def test_layout_map_rejects_changed_source_blocks_but_allows_translation(self):
   import structure_layout

@@ -7,8 +7,8 @@ from pathlib import Path
 
 def blocks_fingerprint(content, document_id):
     from translate import digest
-    keys=('id','type','source','typography','structure','caption_block_ids','crop_text','footnote','footnote_refs','rows','header_rows','asset','asset_sha256','asset_fallback','asset_fallback_sha256')
-    return digest([{**{k:b[k] for k in keys if k in b},'units':[{k:u[k] for k in ('id','source','source_segments') if k in u} for u in b.get('units',[])]} for b in content['blocks'] if b['source']['document_id']==document_id])
+    keys=('id','type','source','typography','structure','caption_block_ids','crop_text','footnote','footnote_refs','rows','header_rows','column_widths','asset','asset_sha256','asset_fallback','asset_fallback_sha256')
+    return digest([{**{k:b[k] for k in keys if k in b},'units':[{k:u[k] for k in ('id','source','source_cell','source_segments','source_template','protected_math','math_revision') if k in u} for u in b.get('units',[])]} for b in content['blocks'] if b['source']['document_id']==document_id])
 
 
 def write_map(root, content, source):
@@ -24,25 +24,31 @@ def write_map(root, content, source):
             for b in prose:
                 x0,y0,x1,y1=b['source']['bbox']
                 if (x1-x0)>page.rect.width*.62:continue
+                # A whole source column can be one successfully joined
+                # paragraph. Count its retained physical rows, not merely the
+                # number of blocks produced by paragraph reconstruction.
+                weight=max(1,len(b['source'].get('physical_row_ids',[])))
                 center=next((a for a in centers if abs(a[0]-x0)<page.rect.width*.07),None)
-                if center:center[1]+=1
-                else:centers.append([x0,1])
+                if center:center[1]+=weight
+                else:centers.append([x0,weight])
             bands=sorted(x for x,n in centers if n>=2)
             columns=len(bands) if 1<=len(bands)<=3 else None
             records=[]
             for order,b in enumerate(blocks,1):
                 bb=b['source'].get('bbox');column=None
                 if bb and bands and bb[2]-bb[0]<page.rect.width*.62:column=min(range(len(bands)),key=lambda i:abs(bands[i]-bb[0]))+1
-                hint={'order':order,'column':column,'source_bbox':bb,'page_width_pt':page.rect.width,'page_height_pt':page.rect.height}
+                hint={'order':order,'column':column,'columns':columns,'source_bbox':bb,
+                      'page_width_pt':page.rect.width,'page_height_pt':page.rect.height}
                 b['layout_hint']=hint
                 records.append({'block_id':b['id'],'type':b['type'],'semantic_role':b.get('structure',{}).get('semantic_role',b.get('presentation',{}).get('role','body')),
                     'typography':b.get('typography',{}),'caption_block_ids':b.get('caption_block_ids',[]),
-                    'crop_text':b.get('crop_text'),'footnote':b.get('footnote'),**hint})
+                    'crop_text':b.get('crop_text'),'footnote':b.get('footnote'),
+                    'inline_formulas':[{'unit_id':u['id'],**rec} for u in b.get('units',[]) for rec in u.get('protected_math',[])],**hint})
             pages.append({'page':number,'width_pt':page.rect.width,'height_pt':page.rect.height,'columns':columns,
-                          'column_evidence':'at least two model-proposed narrative regions per left-edge band' if columns else 'insufficient; retain native source profile',
+                          'column_evidence':'at least two model-proposed narrative physical rows per left-edge band' if columns else 'insufficient; retain native source profile',
                           'blocks':records})
     file=root/'reports/source-layout'/f"{source['id']}.json"
-    write(file,{'schema_version':'1.0.2','document_id':source['id'],'source_sha256':source['sha256'],
+    write(file,{'schema_version':'1.0.3','document_id':source['id'],'source_sha256':source['sha256'],
                 'structure_model':source.get('structure',{}),'blocks_fingerprint':blocks_fingerprint(content,source['id']),'pages':pages,'review_status':'unreviewed',
                 'contract':'Layout consumes ordered blocks, hierarchy, typography, column bands, crops and caption links. Reflow translated text; inspect and refine renders before template fallback.'})
     source['layout_ir']={'file':file.relative_to(root).as_posix(),'sha256':sha(file),'review_status':'unreviewed'}

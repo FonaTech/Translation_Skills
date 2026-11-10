@@ -3,8 +3,20 @@
 Use this path when a PDF looks readable but native extraction contains systematic
 gibberish. More role/link training cannot repair an absent Unicode map. Inspect
 the original raster and embedded font metadata first. Scanned pages and fonts
-with an incorrect existing map need another source-reviewed OCR/transcription
-path; this tool deliberately preserves existing maps.
+with an incorrect existing map remain unresolved; this tool deliberately
+preserves existing maps. PDF OCR and page/table transcription are disabled.
+Retain original artwork when native text is unavailable.
+
+Native PDFs can contain both visible text and an existing invisible text layer.
+The extractor consolidates exact coincident duplicates, including short headings
+and equation numbers. A unique visible row can also retain a geometrically
+coincident conflicting hidden row as an alternate; both transcripts and every
+native row ID remain in the evidence. Preserved unknown font outlines may support
+this association through the remaining known source text, but never decode the
+unknown symbols. A conflicting alternate remains an open source-review finding.
+Use the unchanged visible primary for reading, retain the original `native_lines`
+for formula/prose boundaries, and do not treat row-accounting coverage as a
+resolved wording conflict or semantic accuracy.
 
 From the repository root:
 
@@ -48,7 +60,7 @@ It records every glyph decision and reference-font hash. Unsupported or
 ambiguous glyphs remain unresolved; never supply words from language-model
 completion. The script compares all before/after pages at 72 dpi. Identical
 pixels prove unchanged appearance at that resolution, not correct Unicode,
-equation topology or extraction accuracy. Inspect recovered text against every
+equation topology or a 99% content score. Inspect recovered text against every
 source page before translation, including signs, units and reading order.
 
 Record the original and all ancestor hashes on downstream annotation records:

@@ -9,7 +9,8 @@ Install core and optional dependencies for the full suite, including NumPy-based
 ```bash
 python3 -m pip install -r requirements-core.txt -r requirements-optional.txt
 python3 tools/validate.py
-python3 -m unittest discover -s tests -v
+python3 -m pip install pytest
+python3 -m pytest tests -q
 python3 tools/verify_platform_contract.py --output /path/to/platform-checks.json
 python3 tools/checksums.py
 ```
@@ -65,3 +66,5 @@ Missing translations, partial scope in a full run, stale evidence or missing out
 The [DOM ranker card](../skills/document-translation/assets/models/MODEL_CARD.md) identifies the bundled synthetic dataset and its evaluation. The [source model card](../skills/document-translation/assets/models/SOURCE_STRUCTURE_MODEL_CARD.md) explains the structure model and its limits. Source annotation, freezing, training and evaluation commands are in [structure training](../skills/document-translation/references/structure-training.md).
 
 Use whole-source splits and retain declared lineage for repaired or converted copies. Private source documents and real-data annotations are not distributed. Reproducing that fit requires separately authorized material. Keep fresh-source evaluation separate from training and development results.
+
+Targeted 1.0.3 browser fixtures: `tools/native_math_regression.py` checks source glyphs and reflow; `tools/merged_table_regression.py` checks merged table pagination and native DOCX spans. Use `--out` for native math and `--output` for merged tables; both accept `--browser`. Choose fresh external directories.

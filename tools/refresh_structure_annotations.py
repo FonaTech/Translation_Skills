@@ -95,4 +95,7 @@ def main():
                       'sha256':hashlib.sha256(args.output.read_bytes()).hexdigest()}))
 
 
-if __name__ == '__main__':main()
+if __name__ == '__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

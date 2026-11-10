@@ -1,4 +1,4 @@
-# Source structure model 1.0.2
+# Source structure model 1.0.3
 
 Copyright 2026 Yufeng Zhan. Original inference code and learned parameters: MIT.
 
@@ -25,3 +25,5 @@ The annotation, training and evaluation procedure is described in [structure-tra
 Missing font maps, scanned text, mathematical topology, image ownership and table semantics need source-based checking. Preserving characters and coordinates does not reconstruct superscripts, fractions or equation meaning. Paragraph links can be individually plausible while producing an incorrect complete group.
 
 Evaluate role, link, exact-group, reading-order and truth-coverage metrics separately on whole sources excluded from fitting and tuning. Native glyph accounting and unit tests do not measure translation accuracy. Keep unresolved content visible and inspect the actual source and rendered pages before delivery.
+
+PDF paths retain native text/font/vector evidence and do not run OCR or agent transcription. Repeated margin furniture is archived separately; unavailable native text and unresolved math/table structures remain explicit findings.

@@ -22,7 +22,7 @@ class SelectedPagePreparationTests(unittest.TestCase):
             pdf.save(source);pdf.close()
             output=root/'evidence'
             result=preparation.prepare([source],output,split='train',page_numbers=[2])
-            data=json.loads(Path(result['annotations']).read_text())
+            data=json.loads(Path(result['annotations']).read_text( encoding='utf-8'))
             doc=data['documents'][0]
             self.assertEqual(result['pages'],1)
             self.assertEqual(doc['source_page_count'],3)

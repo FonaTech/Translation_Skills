@@ -17,9 +17,9 @@ Claude manifests exist hidden/visible. Codex openai.yaml is UI metadata. OpenCod
 
 ## Native agent translation loop (all four clients)
 
-Run `workflow PROJECT --advance` and execute source-review, translation, layout-repair and evidence actions in the current agent loop, then resume until `complete: true`. Read [agent-workflow.md](agent-workflow.md). When local OCR is unavailable, the invoking agent can submit source-bound page/table transcription from inspected images. Never manufacture unreadable text or auto-attest reviews.
+Run `workflow PROJECT --advance` and execute source-review, translation, layout-repair and evidence actions in the current agent loop, then resume until `complete: true`. Read [agent-workflow.md](agent-workflow.md). The invoking agent can translate native source units without Ollama or another API. PDF OCR and host-agent page/table transcription are disabled on every client and operating system; retain unavailable text as original artwork with an incomplete-translation finding. Only separately selected non-PDF raster inputs can use the legacy transcription helpers. Never manufacture unreadable text or auto-attest reviews.
 
-No separate translation service or platform-specific model tool is required. The model already running inside Codex, Claude Code, OpenCode or Clouds_Coder reads `tasks/*.json`, writes its real semantic translations to response packets, invokes `translate.py apply`, then resumes audit/build/render/review/release. If a task exceeds context, use smaller chunks and persist the remaining IDs; do not stop because an optional service is missing. A helper script cannot impersonate this step.
+No Ollama installation, local model, API key, translation endpoint or platform-specific model tool is required. The model already running inside Codex, Claude Code, OpenCode or Clouds_Coder reads `tasks/*.json`, writes its real semantic translations to response packets, invokes `translate.py apply`, then resumes audit/build/render/review/release. If a task exceeds context, use smaller chunks and persist the remaining IDs; do not stop because an optional service is missing. A helper script cannot impersonate this step.
 
 1. Inspect extracted text and page previews; reconstruct paragraphs/figures before generating final tasks.
 2. `tasks PROJECT --language TAG --size 20 --all` emits source hashes and expected IDs.

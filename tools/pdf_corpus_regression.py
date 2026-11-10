@@ -53,7 +53,7 @@ def check(a):
     if not metrics or any(x['visually_empty'] for x in metrics):errors.append({'code':'empty-output-page','file':pdf.name})
     generated.append({'file':pdf.name,'sha256':t.sha(pdf),'pages':len(metrics),'page_metrics':metrics})
   results.append({**sample,'units':len(ids),'applied_units':len(ids&applied),'outputs':generated,'errors':errors,'pass':not errors})
- report={'version':(ROOT/'VERSION').read_text().strip(),'seed':manifest['seed'],'pdf_count':manifest['pdf_count'],'scope':manifest.get('scope','first-middle'),'source_pages':sum(len(s['selected_pages']) for s in results),'sampled_pages':sum(len(s['selected_pages']) for s in results),'translation_provider':'current invoking agent; no automatic service','pass':bool(results) and all(s['pass'] for s in results),'samples':results,'limits':'Reviews represent the named reviewer. Mechanical checks cannot certify semantic accuracy.'}
+ report={'version':(ROOT/'VERSION').read_text( encoding='utf-8').strip(),'seed':manifest['seed'],'pdf_count':manifest['pdf_count'],'scope':manifest.get('scope','first-middle'),'source_pages':sum(len(s['selected_pages']) for s in results),'sampled_pages':sum(len(s['selected_pages']) for s in results),'translation_provider':'current invoking agent; no automatic service','pass':bool(results) and all(s['pass'] for s in results),'samples':results,'limits':'Reviews represent the named reviewer. Mechanical checks cannot certify semantic accuracy.'}
  t.write(out/'regression-report.json',report);print(json.dumps({'pass':report['pass'],'samples':len(results),'sampled_pages':report['sampled_pages'],'failed_samples':[s['sample'] for s in results if not s['pass']]},indent=2));return 0 if report['pass'] else 1
 
 def main():
@@ -61,5 +61,7 @@ def main():
  q=sub.add_parser('prepare');q.add_argument('--pdf-root',required=True);q.add_argument('--output-root',required=True);q.add_argument('--seed',type=int,default=173);q.add_argument('--count',type=int,default=8);q.add_argument('--scope',choices=['first-middle','full'],default='first-middle',help='full includes every page of each selected source; translation and review are still performed by the invoking agent');q.add_argument('--language',default='zh-Hans');q.set_defaults(fn=prepare)
  q=sub.add_parser('check');q.add_argument('--output-root',required=True);q.set_defaults(fn=check);a=p.parse_args();return a.fn(a)
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  try:sys.exit(main())
  except (OSError,ValueError) as error:print('ERROR: '+str(error),file=sys.stderr);sys.exit(2)

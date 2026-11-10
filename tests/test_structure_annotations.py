@@ -33,7 +33,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
         # No learned model or model-generated role may enter a blank label set.
         with patch.object(structure,'load_model',side_effect=AssertionError('Prediction leaked into preparation')):
             result=preparation.prepare([self.source],self.root/'evidence')
-        path=Path(result['annotations']);data=json.loads(path.read_text())
+        path=Path(result['annotations']);data=json.loads(path.read_text( encoding='utf-8'))
         document=data['documents'][0]
         document['label_source']='Original fixture authored by this test; each printed line is a separate prose paragraph.'
         for page in document['pages']:
@@ -41,7 +41,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
             for row in page['lines']:
                 row.update(_role='body',_group=row['id'])
         path=self.root/'labels.json'
-        path.write_text(json.dumps(data));return path,data
+        path.write_text(json.dumps(data), encoding='utf-8');return path,data
 
     def test_source_only_preparation_preserves_all_pages_rows_and_native_ids(self):
         _,data=self.prepare_labeled();document=data['documents'][0]
@@ -53,7 +53,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
             self.assertEqual({lid for row in page['lines'] for lid in row['native_line_ids']},
                              {row['id'] for row in page['native_lines']})
             self.assertTrue(all('predicted_role' not in row for row in page['lines']))
-        original=json.loads((self.root/'evidence/unlabeled.json').read_text())
+        original=json.loads((self.root/'evidence/unlabeled.json').read_text( encoding='utf-8'))
         self.assertTrue(all('_role' not in row for d in original['documents'] for p in d['pages'] for row in p['lines']))
 
     def test_frozen_hash_matches_bytes_and_existing_evidence_is_protected(self):
@@ -61,7 +61,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
         result=freezing.freeze(labels,frozen)
         self.assertTrue(result['pass']);self.assertTrue(result['not_independent_gold_certification'])
         self.assertEqual(result['sha256'],hashlib.sha256(frozen.read_bytes()).hexdigest())
-        self.assertTrue(frozen.with_suffix('.json.sha256').read_text().startswith(result['sha256']))
+        self.assertTrue(frozen.with_suffix('.json.sha256').read_text( encoding='utf-8').startswith(result['sha256']))
         with self.assertRaises(FileExistsError):freezing.freeze(labels,frozen)
         with self.assertRaises(FileExistsError):preparation.prepare([self.source],self.root/'evidence')
 
@@ -93,7 +93,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
         path,data=self.prepare_labeled()
         for key,value in [('text','Invented completion'),('bbox',[0,0,100,10])]:
             damaged=copy.deepcopy(data);damaged['documents'][0]['pages'][0]['lines'][0][key]=value
-            path.write_text(json.dumps(damaged))
+            path.write_text(json.dumps(damaged), encoding='utf-8')
             with self.assertRaisesRegex(ValueError,'Physical-row evidence changed'):
                 freezing.freeze(path,self.root/(key+'-frozen.json'))
             self.assertFalse((self.root/(key+'-frozen.json')).exists())
@@ -106,7 +106,7 @@ class AnnotationEvidenceTests(unittest.TestCase):
     def test_derived_source_lineage_is_recorded_and_repeated_family_rejected(self):
         parent='a'*64
         result=preparation.prepare([self.source],self.root/'derived',split='train',source_parent_sha256=[parent])
-        data=json.loads(Path(result['annotations']).read_text())
+        data=json.loads(Path(result['annotations']).read_text( encoding='utf-8'))
         self.assertEqual(data['documents'][0]['source_parent_sha256'],[parent])
         _,labeled=self.prepare_labeled()
         labeled['documents'][0]['source_parent_sha256']=[parent]

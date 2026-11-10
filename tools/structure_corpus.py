@@ -100,7 +100,7 @@ def scan(inventory,model,output):
         except Exception as e:record['error']=str(e);record['native_accounting_pass']=False
         report.write_text(json.dumps(record,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');results.append(record)
         print(json.dumps({'processed':i+1,'total':len(rows),'pages':len(record['pages']),'native_accounting_pass':record['native_accounting_pass'],'elapsed_seconds':round(time.time()-started,1)}),flush=True)
-        summary={'version':'1.0.2','model_sha256':model_hash,'processed_documents':len(results),'expected_documents':len(rows),'pages':sum(len(r['pages']) for r in results),'native_accounting_pass':all(r['native_accounting_pass'] for r in results),
+        summary={'version':'1.0.3','model_sha256':model_hash,'processed_documents':len(results),'expected_documents':len(rows),'pages':sum(len(r['pages']) for r in results),'native_accounting_pass':all(r['native_accounting_pass'] for r in results),
                  'ocr_required_pages':sum(p['ocr_required'] for r in results for p in r['pages']),'encoding_review_pages':sum(bool(p['encoding_review']) for r in results for p in r['pages']),
                  'role_review_rows':sum(sum(x['review_required'] for x in p['roles']) for r in results for p in r['pages']),
                  'errors':[{'path':r['path'],'error':r['error']} for r in results if 'error' in r],
@@ -228,7 +228,7 @@ def evaluate(annotations,model,output,inventory=None):
         rows.append(row)
     expected=[x['sha256'] for x in json.loads(inventory.read_text(encoding='utf-8'))['files']] if inventory else data.get('expected_source_identities',[])
     gate=certification_gate(rows,expected)
-    result={'version':'1.0.2','evaluation_revision':'role-prose-spatial-coverage-v4',
+    result={'version':'1.0.3','evaluation_revision':'role-prose-spatial-coverage-v4',
             'evaluator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             'model_sha256':hashlib.sha256(model.read_bytes()).hexdigest(),
             'annotation_sha256':hashlib.sha256(annotations.read_bytes()).hexdigest(),'pipeline_sha256':hashlib.sha256(Path(s.__file__).read_bytes()).hexdigest(),
@@ -244,4 +244,7 @@ def main():
     q=sub.add_parser('evaluate');q.add_argument('--annotations',type=Path,required=True);q.add_argument('--model',type=Path,required=True);q.add_argument('--output',type=Path,required=True);q.add_argument('--inventory',type=Path)
     a=p.parse_args();print(json.dumps(scan(a.inventory,a.model,a.output) if a.command=='scan' else evaluate(a.annotations,a.model,a.output,a.inventory),ensure_ascii=False))
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    from cli_encoding import configure_utf8
+    configure_utf8()
+    main()

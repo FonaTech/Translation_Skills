@@ -11,15 +11,15 @@ def run(output,browser=None):
  if out.exists():raise ValueError('Use a fresh evidence directory.')
  if out.is_relative_to(ROOT):raise ValueError('Keep generated evidence outside the public repository.')
  out.mkdir(parents=True)
- result={'version':'1.0.2','scope':'Measured browser boundary and provenance fixtures; no semantic or aesthetic attestation.','checks':[]}
+ result={'version':'1.0.3','scope':'Measured browser boundary and provenance fixtures; no semantic or aesthetic attestation.','checks':[]}
  def check(name,passed,detail=None):
   result['checks'].append({'name':name,'pass':bool(passed),'detail':detail})
-  (out/'layout-runtime-regression.json').write_text(json.dumps(result,indent=2)+'\n')
+  (out/'layout-runtime-regression.json').write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
   if not passed:raise AssertionError(name+': '+str(detail))
  with sync_playwright() as pw:
   br=pw.chromium.launch(headless=True,**({'executable_path':browser} if browser else {}));page=br.new_page()
   page.set_content('<html><head></head><body></body></html>')
-  page.add_script_tag(content='const FAMILY_CSS="";const CONTENT_CSS="";const CATALOG=[];'+(ASSETS/'layout-runtime.js').read_text())
+  page.add_script_tag(content='const FAMILY_CSS="";const CONTENT_CSS="";const CATALOG=[];'+(ASSETS/'layout-runtime.js').read_text( encoding='utf-8'))
   for kind in ['normal','bottom','caption','joined','oversized-joined']:
    measured=page.evaluate(r'''async kind=>{
     document.querySelectorAll('style,#fixture,#edPages').forEach(x=>x.remove());
@@ -92,6 +92,24 @@ def run(output,browser=None):
    if kind=='alignment-long':check('long alignment row remains splittable',len(measured['connector'])>1 and not measured['report'].get('keepNextMoves'),measured)
    if kind=='alignment-oversized-next':check('oversized pair does not force an empty page',not together and not measured['report'].get('keepNextMoves') and all(p['chars'] or p['images'] for p in measured['report']['pages']),measured)
    page.screenshot(path=str(out/(kind+'.png')),full_page=True)
+  for kind in ['short-prefix-graphic','locked-small-graphic','substantial-prefix']:
+   measured=page.evaluate(r'''async kind=>{
+    document.querySelectorAll('style,#fixture,#edPages').forEach(x=>x.remove());
+    const d={w:140,h:150,mx:10,my:10,size:10,leading:1.4,cols:2,gap:5,para:0,head:0,accent:'#304659',font:'serif'},s={design:d,title:'prefix graphic',sourceClass:'fixture'};
+    const st=document.createElement('style');st.textContent=Layout.styles([s],'.fixture figure{margin:2mm 0;text-align:center}.fixture figcaption{font:10px/1.2 serif}');document.head.append(st);
+    const root=document.createElement('div');root.id='fixture';root.innerHTML='<section class="ed-doc ed-section-0 fixture"></section>';document.body.append(root);const section=root.firstElementChild;
+    const capacity=(d.h-2*d.my-14)*96/25.4,substantial=kind==='substantial-prefix';
+    const prefix='<p data-block="prefix" style="height:'+(substantial?120:50)+'px">'+(substantial?'Full source paragraph. '.repeat(24):'Source title')+'</p>';
+    const uri='data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="'+(capacity-20)+'"><rect width="160" height="'+(capacity-20)+'" fill="#34495e"/></svg>');
+    section.innerHTML=prefix+'<figure data-span="all" data-block="graphic"><img style="width:160px;'+(kind==='locked-small-graphic'?'max-height:80px;':'')+'" src="'+uri+'"><figcaption>Source caption.</figcaption></figure>';
+    const original=section.innerHTML,parameters=JSON.stringify(s),{report,stage}=await Layout.paginate(document,[s],root);
+    return {report,pages:stage.children.length,sourceUnchanged:original===section.innerHTML,parametersUnchanged:parameters===JSON.stringify(s),caption:stage.querySelector('figcaption').textContent};
+   }''',kind)
+   check(kind+' keeps source and caption',measured['report']['pass'] and measured['sourceUnchanged'] and measured['parametersUnchanged'] and measured['caption']=='Source caption.',measured)
+   if kind=='short-prefix-graphic':check('graphic adjustment avoids title-only page',measured['pages']==1 and bool(measured['report'].get('prefixGraphicFits')),measured)
+   if kind=='locked-small-graphic':check('smaller explicit graphic is never enlarged',measured['pages']==1 and not measured['report'].get('prefixGraphicFits'),measured)
+   if kind=='substantial-prefix':check('substantial source prose is not squeezed for a graphic',measured['pages']==2 and not measured['report'].get('prefixGraphicFits'),measured)
+   page.screenshot(path=str(out/(kind+'.png')),full_page=True)
   # A print host receives serialized HTML. Test its actual line fragments.
   measured=page.evaluate(r'''async ()=>{
    document.querySelectorAll('style,#fixture,#edPages').forEach(x=>x.remove());
@@ -108,7 +126,9 @@ def run(output,browser=None):
   }''')
   check('serialized balanced bands retain exact fragment geometry',measured['pass'] and measured['integerHeights'] and measured['equal'],measured)
   br.close()
- result['pass']=all(c['pass'] for c in result['checks']);(out/'layout-runtime-regression.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps({'pass':result['pass'],'checks':len(result['checks'])}));return result
+ result['pass']=all(c['pass'] for c in result['checks']);(out/'layout-runtime-regression.json').write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8');print(json.dumps({'pass':result['pass'],'checks':len(result['checks'])}));return result
 
 if __name__=='__main__':
+ from cli_encoding import configure_utf8
+ configure_utf8()
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True);p.add_argument('--browser',default=os.environ.get('TRANSLATION_BROWSER'));a=p.parse_args();raise SystemExit(0 if run(a.output,a.browser)['pass'] else 1)
