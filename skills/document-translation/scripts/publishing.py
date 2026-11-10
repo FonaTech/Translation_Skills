@@ -149,7 +149,7 @@ def source_presentation(c,source,l,e):
  title_block=next((b for b in c['blocks'] if b['source']['document_id']==source['id'] and b['type']=='heading' and b.get('level')==1 and b.get('units')),None)
  if title_block is None:return source
  edition='faithful' if e=='alignment' else e
- title=' '.join(value(u,l,edition) for u in title_block['units']).strip()
+ title=' '.join(__import__('math_protection').literal(value(u,l,edition),u.get('protected_math',[])) for u in title_block['units']).strip()
  return {**source,'display_title':title} if title else source
 
 def document_section(m,source,x,l,e,lab):

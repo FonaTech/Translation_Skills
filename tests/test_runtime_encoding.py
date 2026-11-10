@@ -49,7 +49,7 @@ class RuntimeEncodingTests(unittest.TestCase):
         self.assertEqual(source['PYTHONIOENCODING'], 'gbk')
         self.assertEqual(env['KEEP'], 'value')
         result = subprocess.run([sys.executable, '-c', 'import sys;print(sys.flags.utf8_mode);print("\\u4e2d\\u6587 \\u222b\\u03b1 \\U0001f600")'],
-                                env=env, capture_output=True, check=True)
+                                env={**os.environ, **env}, capture_output=True, check=True)
         self.assertEqual(result.stdout.decode('utf-8').splitlines(), ['1', '中文 ∫α 😀'])
 
     def test_json_models_reader_and_source_files_ignore_cp936_default(self):
@@ -58,6 +58,11 @@ class RuntimeEncodingTests(unittest.TestCase):
         import figure_learning
         import translate
         original_open = io.open
+        original_path_open = Path.open
+        def gbk_path_open(path, mode='r', buffering=-1, encoding=None, errors=None, newline=None):
+            if 'b' not in mode and encoding in {None, 'locale'}:
+                encoding = 'cp936'
+            return original_path_open(path, mode, buffering, encoding, errors, newline)
         # Simulate a legacy locale even when the host enables Python UTF-8 mode.
         original_text_encoding = io.text_encoding
         def legacy_text_encoding(encoding, stacklevel=2):
@@ -70,7 +75,7 @@ class RuntimeEncodingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / '中文 日本語 😀' / '内容.json'
             target.parent.mkdir()
-            with patch('io.text_encoding', side_effect=legacy_text_encoding), patch('io.open', side_effect=gbk_open):
+            with patch('io.text_encoding', side_effect=legacy_text_encoding), patch('io.open', side_effect=gbk_open), patch.object(Path, 'open', gbk_path_open):
                 # Control proves this test actually imposes the legacy default.
                 with self.assertRaises(UnicodeEncodeError):
                     target.with_suffix('.bad').write_text(payload['text'])
@@ -89,7 +94,7 @@ class RuntimeEncodingTests(unittest.TestCase):
             project = Path(temporary) / '中文 ∫ 😀'
             result = subprocess.run([sys.executable, '-X', 'utf8=0', str(SCRIPTS / 'translate.py'),
                 'init', str(project), '--title', '日本語 ∫α 😀', '--languages', 'zh-Hans'],
-                env=env, capture_output=True, check=True)
+                env={**os.environ, **env}, capture_output=True, check=True)
             self.assertIn(str(project.resolve()), result.stdout.decode('utf-8'))
             self.assertEqual(json.loads((project / 'project.json').read_text(encoding='utf-8'))['title'], '日本語 ∫α 😀')
             result = subprocess.run([sys.executable, '-X', 'utf8=0', str(SCRIPTS / 'translate.py'),

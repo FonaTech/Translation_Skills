@@ -99,3 +99,16 @@ class ReadabilityTests(unittest.TestCase):
   self.assertEqual(''.join(text.split()),''.join(''.join(parts).split()))
   for ambiguous in ['A paragraph cites [1] and [2].','[1] A.\n[3] C.','Intro\n[1] A.\n[2] B.','[1] A.']:
    self.assertIsNone(t.split_numbered_entries(ambiguous))
+
+
+def test_running_title_restores_protected_notation_without_changing_units():
+    import copy
+    token = '⟦MATH:0123456789abcdef⟧'
+    content = {'blocks': [{'type': 'heading', 'level': 1, 'source': {'document_id': 'D1'},
+        'units': [{'id': 'u1', 'source': 'Layered NbOI2',
+                   'translations': {'zh-Hans': {'faithful': '层状 '+token}},
+                   'protected_math': [{'token': token, 'source': 'NbOI2'}]}]}]}
+    original = copy.deepcopy(content)
+    result = pub.source_presentation(content, {'id': 'D1', 'name': 'source.pdf'}, 'zh-Hans', 'alignment')
+    assert result['display_title'] == '层状 NbOI2'
+    assert content == original
